@@ -1,0 +1,62 @@
+from nltk.corpus import brown
+from nltk import FreqDist, WittenBellProbDist
+from nltk import ngrams, bigrams
+
+
+start = '<s>'
+end = '</s>'
+sents = brown.tagged_sents(tagset='universal')
+
+
+
+
+train_size = 10000
+test_size = 500
+train_sents = sents[:train_size]
+test_sents = sents[train_size:train_size + test_size]
+
+train_words = []
+test_words = []
+train_tags = []
+test_tags = []
+
+for sent in train_sents:
+    train_words = train_words + [start] + [w for (w, _) in sent] + [end]
+    train_tags = train_tags + [start] + [w for (w, _) in sent] + [end]
+
+for sent in test_sents:
+    test_words = train_words + [start] + [w for (w, _) in sent] + [end]
+    test_tags = train_tags + [start] + [w for (w, _) in sent] + [end]
+
+
+
+
+print(train_words)
+
+
+
+
+bigrams = list(bigrams(train_sents[0]))
+FreqDist(train_words)
+
+#print(bigrams)
+
+# print(first)
+
+#words = [w for (w, _) in first]
+# print(words)
+
+#tags = [t for (_, t) in first]
+
+
+# print(tags)
+
+
+def show_sent(sent):
+    print(sent)
+
+
+print(" ")
+
+# for sent in bigrams:
+#     show_sent(sent)
