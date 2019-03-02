@@ -10,7 +10,12 @@ sents = brown.tagged_sents(tagset='universal')
 
 
 
-train_size = 10000
+
+sents = [[(start, start)] + sent + [(end, end)] for sent in sents]
+
+
+
+train_size = 1000
 test_size = 500
 train_sents = sents[:train_size]
 test_sents = sents[train_size:train_size + test_size]
@@ -21,23 +26,53 @@ train_tags = []
 test_tags = []
 
 for sent in train_sents:
-    train_words = train_words + [start] + [w for (w, _) in sent] + [end]
-    train_tags = train_tags + [start] + [w for (w, _) in sent] + [end]
+    train_words = train_words + [w for (w, _) in sent]
+    train_tags = train_tags + [t for (_,t) in sent]
 
-for sent in test_sents:
-    test_words = train_words + [start] + [w for (w, _) in sent] + [end]
-    test_tags = train_tags + [start] + [w for (w, _) in sent] + [end]
+train_sents = [sent for sent in train_sents]
+
+train_sents_single = []
+for sent in train_sents:
+    train_sents_single = train_sents_single + sent
+
+# for sent in test_sents:
+#     test_words = train_words + [start] + [w for (w, _) in sent] + [end]
+#     test_tags = train_tags + [start] + [t for (_,t) in sent] + [end]
 
 
 
+print("bigrams(train_words)")
+bigrams_words = list(bigrams(train_words))
+print(bigrams_words)
 
-print(train_words)
+print("bigrams(train_tags)")
+bigrams_tags = list(bigrams(train_tags))
+print(bigrams_tags)
 
 
+print("FreqDist(train_words)")
+fdist_words_train = FreqDist(train_words)
+print(fdist_words_train.most_common())
 
+print("FreqDist(train_tags)")
+fdist_tags_train = FreqDist(train_tags)
+print(fdist_tags_train.most_common())
 
-bigrams = list(bigrams(train_sents[0]))
-FreqDist(train_words)
+print("fdist_bigram_words_train")
+fdist_bigram_words_train = FreqDist(bigrams_words)
+print(fdist_bigram_words_train.most_common())
+
+print("fdist_bigram_tags_train")
+fdist_bigram_tags_train = FreqDist(bigrams_tags)
+print(fdist_bigram_tags_train.most_common())
+
+print("FreqDist(train_sents)")
+fdist_sents = FreqDist(train_sents_single)
+print(fdist_sents.most_common())
+
+print(train_sents[:3])
+
+# print(sents[:1])
 
 #print(bigrams)
 
@@ -53,6 +88,10 @@ FreqDist(train_words)
 
 
 def show_sent(sent):
+    print(sent)
+
+
+def get_prob_Tag_Tag(tag_pair):
     print(sent)
 
 
