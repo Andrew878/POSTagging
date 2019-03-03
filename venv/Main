@@ -21,11 +21,9 @@ train_sents = sents[:train_size]
 test_sents = sents[train_size:train_size + test_size]
 
 train_words_individual = [[]] * len(train_sents)
-#print(train_words)
 train_tags_individual = [[]] * len(train_sents)
-test_words = []
-test_tags = []
-
+test_words = [[]] * len(test_sents)
+test_tags = [[]] * len(test_sents)
 j = 0
 
 freq_dist_tag_single = FreqDist()
@@ -44,11 +42,37 @@ for sent in train_sents:
     train_tags_individual[j].insert(0,tag_list)
     j += 1
 
+j = 0
+for sent in test_sents:
+    word_list = [w for (w, _) in sent]
+    tag_list = [t for (_, t) in sent]
+
+    test_words_individual[j].insert(0,word_list)
+    test_tags_individual[j].insert(0,tag_list)
+    j += 1
+
 
 print(train_words_individual[0][:])
 print(freq_dist_tag_single.most_common(15))
 print(freq_dist_tagWordPair.most_common(15))
 print(freq_dist_tagBigram.most_common(15))
+
+print()
+
+freq_dist_tag_single_SMOOTH = WittenBellProbDist(freq_dist_tag_single, bins=1e5)
+freq_dist_tagWordPair_SMOOTH = WittenBellProbDist(freq_dist_tagWordPair, bins=1e5)
+freq_dist_tagBigram_SMOOTH = WittenBellProbDist(freq_dist_tagBigram, bins=1e5)
+
+
+#print("unsmoothed prob = ",freq_dist_tag_single["NOUN"]*1.0 / freq_dist_tag_single.N())
+#print("smoothed prob = ",freq_dist_tag_single_SMOOTH.prob("NOUN"))
+
+#print(freq_dist_tagWordPair.most_common(15))
+#print(freq_dist_tagBigram.most_common(15))
+
+
+#for
+
 
 train_sents = [sent for sent in train_sents]
 
@@ -61,6 +85,27 @@ for sent in train_sents:
 #     test_tags = train_tags + [start] + [t for (_,t) in sent] + [end]
 
 
+
+print(train_sents[:3])
+
+#print("Frequency of ('the', 'DET')")
+#print(fdist_sents[('the', 'DET')] *1.0 / fdist_sents.N())
+
+
+
+
+def get_prob_Tag_Tag(tag_pair):
+    print(sent)
+
+
+print(" ")
+
+def get_prob(tuple,fdist):
+    return (fdist[tuple]*1.0/fdist.N())
+
+
+
+
 # print("bigrams(train_words)")
 # bigrams_words = list(bigrams(train_words))
 # show_sent(bigrams_words)
@@ -69,13 +114,13 @@ for sent in train_sents:
 # bigrams_tags = list(bigrams(train_tags))
 # print(bigrams_tags)
 #
-print("FreqDist(train_words)")
-fdist_words_train = FreqDist(train_words_individual)
-print(fdist_words_train.most_common())
-
-print("FreqDist(train_tags)")
-fdist_tags_train = FreqDist(train_tags_individual)
-print(fdist_tags_train.most_common())
+# print("FreqDist(train_words)")
+# fdist_words_train = FreqDist(train_words_individual)
+# print(fdist_words_train.most_common())
+#
+# print("FreqDist(train_tags)")
+# fdist_tags_train = FreqDist(train_tags_individual)
+# print(fdist_tags_train.most_common())
 
 # print("fdist_bigram_words_train")
 # fdist_bigram_words_train = FreqDist(bigrams_words)
@@ -89,36 +134,23 @@ print(fdist_tags_train.most_common())
 # fdist_sents = FreqDist(train_sents_single)
 # print(fdist_sents.most_common())
 
-print(train_sents[:3])
-
-print("Frequency of ('the', 'DET')")
-print (fdist_sents[('the', 'DET')] *1.0 / fdist_sents.N())
-
-
-# print(sents[:1])
-
-# print(bigrams)
-
-# print(first)
-
-# words = [w for (w, _) in first]
-# print(words)
-
-# tags = [t for (_, t) in first]
-
-
-# print(tags)
 
 
 
-def get_prob_Tag_Tag(tag_pair):
-    print(sent)
 
 
-print(" ")
 
-def get_prob(tuple,fdist):
-    return (fdist[tuple]*1.0/fdist.N())
+
+
+
+
+
+
+
+
+
+
+
 
 
 
