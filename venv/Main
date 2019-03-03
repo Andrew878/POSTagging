@@ -3,31 +3,52 @@ from nltk import FreqDist, WittenBellProbDist
 from nltk import ngrams, bigrams
 
 
+def show_sent(sents):
+    for sent in sents[:5]:
+        print(sent)
+
+
 start = '<s>'
 end = '</s>'
+max_sentence_length =101
 sents = brown.tagged_sents(tagset='universal')
 
-
-
-
-
-sents = [[(start, start)] + sent + [(end, end)] for sent in sents]
-
-
+sents = [[(start, start)] + sent + [(end, end)] for sent in sents if len(sent) < max_sentence_length]
 
 train_size = 1000
 test_size = 500
 train_sents = sents[:train_size]
 test_sents = sents[train_size:train_size + test_size]
 
-train_words = []
+train_words_individual = [[]] * len(train_sents)
+#print(train_words)
+train_tags_individual = [[]] * len(train_sents)
 test_words = []
-train_tags = []
 test_tags = []
 
+j = 0
+
+freq_dist_tag_single = FreqDist()
+freq_dist_tagWordPair = FreqDist()
+freq_dist_tagBigram = FreqDist()
+
 for sent in train_sents:
-    train_words = train_words + [w for (w, _) in sent]
-    train_tags = train_tags + [t for (_,t) in sent]
+    word_list = [w for (w, _) in sent]
+    tag_list = [t for (_, t) in sent]
+
+    freq_dist_tag_single += FreqDist(tag_list)
+    freq_dist_tagWordPair += FreqDist(sent)
+    freq_dist_tagBigram += FreqDist(bigrams(tag_list))
+
+    train_words_individual[j].insert(0,word_list)
+    train_tags_individual[j].insert(0,tag_list)
+    j += 1
+
+
+print(train_words_individual[0][:])
+print(freq_dist_tag_single.most_common(15))
+print(freq_dist_tagWordPair.most_common(15))
+print(freq_dist_tagBigram.most_common(15))
 
 train_sents = [sent for sent in train_sents]
 
@@ -40,55 +61,54 @@ for sent in train_sents:
 #     test_tags = train_tags + [start] + [t for (_,t) in sent] + [end]
 
 
+# print("bigrams(train_words)")
+# bigrams_words = list(bigrams(train_words))
+# show_sent(bigrams_words)
 
-print("bigrams(train_words)")
-bigrams_words = list(bigrams(train_words))
-print(bigrams_words)
-
-print("bigrams(train_tags)")
-bigrams_tags = list(bigrams(train_tags))
-print(bigrams_tags)
-
-
+# print("bigrams(train_tags)")
+# bigrams_tags = list(bigrams(train_tags))
+# print(bigrams_tags)
+#
 print("FreqDist(train_words)")
-fdist_words_train = FreqDist(train_words)
+fdist_words_train = FreqDist(train_words_individual)
 print(fdist_words_train.most_common())
 
 print("FreqDist(train_tags)")
-fdist_tags_train = FreqDist(train_tags)
+fdist_tags_train = FreqDist(train_tags_individual)
 print(fdist_tags_train.most_common())
 
-print("fdist_bigram_words_train")
-fdist_bigram_words_train = FreqDist(bigrams_words)
-print(fdist_bigram_words_train.most_common())
-
-print("fdist_bigram_tags_train")
-fdist_bigram_tags_train = FreqDist(bigrams_tags)
-print(fdist_bigram_tags_train.most_common())
-
-print("FreqDist(train_sents)")
-fdist_sents = FreqDist(train_sents_single)
-print(fdist_sents.most_common())
+# print("fdist_bigram_words_train")
+# fdist_bigram_words_train = FreqDist(bigrams_words)
+# print(fdist_bigram_words_train.most_common())
+#
+# print("fdist_bigram_tags_train")
+# fdist_bigram_tags_train = FreqDist(bigrams_tags)
+# print(fdist_bigram_tags_train.most_common())
+#
+# print("FreqDist(train_sents)")
+# fdist_sents = FreqDist(train_sents_single)
+# print(fdist_sents.most_common())
 
 print(train_sents[:3])
 
+print("Frequency of ('the', 'DET')")
+print (fdist_sents[('the', 'DET')] *1.0 / fdist_sents.N())
+
+
 # print(sents[:1])
 
-#print(bigrams)
+# print(bigrams)
 
 # print(first)
 
-#words = [w for (w, _) in first]
+# words = [w for (w, _) in first]
 # print(words)
 
-#tags = [t for (_, t) in first]
+# tags = [t for (_, t) in first]
 
 
 # print(tags)
 
-
-def show_sent(sent):
-    print(sent)
 
 
 def get_prob_Tag_Tag(tag_pair):
@@ -97,5 +117,11 @@ def get_prob_Tag_Tag(tag_pair):
 
 print(" ")
 
-# for sent in bigrams:
-#     show_sent(sent)
+def get_prob(tuple,fdist):
+    return (fdist[tuple]*1.0/fdist.N())
+
+
+
+
+
+
