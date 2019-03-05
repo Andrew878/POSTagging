@@ -6,6 +6,21 @@ from nltk.parse import viterbi
 import Viterbi as vit
 
 
+def measure_performance_single_sentence(test_sent_tags_actual, test_sent_tags_est):
+    if (len(test_sent_tags_actual) != len(test_sent_tags_est)):
+        print("ERROR: SIZE IS NOT THE SAME")
+        print("test actual:", test_sent_tags_actual)
+        print("test est:", test_sent_tags_est)
+        return 10**10
+
+
+
+    sum_error = 0
+    for i in range(0, len(test_sent_tags_est)):
+        if(test_sent_tags_est[i] != test_sent_tags_actual[i]):
+            sum_error += 1
+
+    return sum_error
 
 def show_sent(sents):
     for sent in sents[:5]:
@@ -14,7 +29,7 @@ def show_sent(sents):
 
 start = '<s>'
 end = '</s>'
-max_sentence_length =101
+max_sentence_length = 101
 sents = brown.tagged_sents(tagset='universal')
 
 sents = [[(start, start)] + sent + [(end, end)] for sent in sents if len(sent) < max_sentence_length]
@@ -45,20 +60,18 @@ for sent in train_sents:
     # skip the special start/end characters
     freq_dist_tagWordPairWithStartEnd += FreqDist(sent)
 
-    train_words_individual[j].insert(0,word_list)
-    train_tags_individual[j].insert(0,tag_list)
+    train_words_individual[j].insert(0, word_list)
+    train_tags_individual[j].insert(0, tag_list)
     j += 1
-
-
-
 
 j = 0
 for sent in test_sents:
     word_list = [w for (w, _) in sent]
     tag_list = [t for (_, t) in sent]
 
-    test_words_individual[j].insert(0,word_list)
-    test_tags_individual[j].insert(0,tag_list)
+
+    test_words_individual[j].insert(0, word_list)
+    test_tags_individual[j].insert(0, tag_list)
     j += 1
 
 # print(train_words_individual[0][:])
@@ -73,18 +86,32 @@ freq_dist_tagWordPair_SMOOTH = WittenBellProbDist(freq_dist_tagWordPair, bins=1e
 freq_dist_tagWordPairWithStartEnd_SMOOTH = WittenBellProbDist(freq_dist_tagWordPairWithStartEnd, bins=1e5)
 freq_dist_tagBigram_SMOOTH = WittenBellProbDist(freq_dist_tagBigram, bins=1e5)
 
-
 print(test_sents[0])
-vit.viterbi_path(test_sents[0],freq_dist_tag_single , freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH, freq_dist_tagBigram_SMOOTH,freq_dist_tagWordPairWithStartEnd_SMOOTH)
-
-#print("unsmoothed prob = ",freq_dist_tag_single["NOUN"]*1.0 / freq_dist_tag_single.N())
-#print("smoothed prob = ",freq_dist_tag_single_SMOOTH.prob("NOUN"))
-
-#print(freq_dist_tagWordPair.most_common(15))
-#print(freq_dist_tagBigram.most_common(15))
+test_sent_tags_est = vit.viterbi_path(test_sents[0], freq_dist_tag_single, freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
+                 freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
 
 
-#for
+
+word_list_act = [w for (w, _) in test_sents[0]]
+tag_list_act = [t for (_, t) in test_sents[0]]
+
+perf = 1.0- measure_performance_single_sentence(tag_list_act[1:-1], test_sent_tags_est)*1.0 /len(test_sent_tags_est)
+
+print("actual")
+print(tag_list_act)
+print("est")
+print(test_sent_tags_est)
+
+print(perf)
+
+# print("unsmoothed prob = ",freq_dist_tag_single["NOUN"]*1.0 / freq_dist_tag_single.N())
+# print("smoothed prob = ",freq_dist_tag_single_SMOOTH.prob("NOUN"))
+
+# print(freq_dist_tagWordPair.most_common(15))
+# print(freq_dist_tagBigram.most_common(15))
+
+
+# for
 
 
 train_sents = [sent for sent in train_sents]
@@ -92,79 +119,6 @@ train_sents = [sent for sent in train_sents]
 train_sents_single = []
 for sent in train_sents:
     train_sents_single = train_sents_single + sent
-
-# for sent in test_sents:
-#     test_words = train_words + [start] + [w for (w, _) in sent] + [end]
-#     test_tags = train_tags + [start] + [t for (_,t) in sent] + [end]
-
-
-
-#print(train_sents[:3])
-
-#print("Frequency of ('the', 'DET')")
-#print(fdist_sents[('the', 'DET')] *1.0 / fdist_sents.N())
-
-
-
-
-def get_prob_Tag_Tag(tag_pair):
-    print(sent)
-
-
-
-
-def get_prob(tuple,fdist):
-    return (fdist[tuple]*1.0/fdist.N())
-
-
-
-
-# print("bigrams(train_words)")
-# bigrams_words = list(bigrams(train_words))
-# show_sent(bigrams_words)
-
-# print("bigrams(train_tags)")
-# bigrams_tags = list(bigrams(train_tags))
-# print(bigrams_tags)
-#
-# print("FreqDist(train_words)")
-# fdist_words_train = FreqDist(train_words_individual)
-# print(fdist_words_train.most_common())
-#
-# print("FreqDist(train_tags)")
-# fdist_tags_train = FreqDist(train_tags_individual)
-# print(fdist_tags_train.most_common())
-
-# print("fdist_bigram_words_train")
-# fdist_bigram_words_train = FreqDist(bigrams_words)
-# print(fdist_bigram_words_train.most_common())
-#
-# print("fdist_bigram_tags_train")
-# fdist_bigram_tags_train = FreqDist(bigrams_tags)
-# print(fdist_bigram_tags_train.most_common())
-#
-# print("FreqDist(train_sents)")
-# fdist_sents = FreqDist(train_sents_single)
-# print(fdist_sents.most_common())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -167,4 +167,4 @@ def viterbi_path(sent, freq_dist_tag_single, freq_dist_tag_single_SMOOTH, freq_d
 
     print(final_best_tag)
 
-    return ()
+    return (final_best_tag)
