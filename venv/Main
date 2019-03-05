@@ -61,11 +61,10 @@ for sent in test_sents:
     test_tags_individual[j].insert(0,tag_list)
     j += 1
 
-
-print(train_words_individual[0][:])
-print(freq_dist_tag_single.most_common(15))
-print(freq_dist_tagWordPair.most_common(15))
-print(freq_dist_tagBigram.most_common(15))
+# print(train_words_individual[0][:])
+# print(freq_dist_tag_single.most_common(15))
+# print(freq_dist_tagWordPair.most_common(15))
+# print(freq_dist_tagBigram.most_common(15))
 
 print("")
 
@@ -75,7 +74,7 @@ freq_dist_tagWordPairWithStartEnd_SMOOTH = WittenBellProbDist(freq_dist_tagWordP
 freq_dist_tagBigram_SMOOTH = WittenBellProbDist(freq_dist_tagBigram, bins=1e5)
 
 
-
+print(test_sents[0])
 vit.viterbi_path(test_sents[0],freq_dist_tag_single , freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH, freq_dist_tagBigram_SMOOTH,freq_dist_tagWordPairWithStartEnd_SMOOTH)
 
 #print("unsmoothed prob = ",freq_dist_tag_single["NOUN"]*1.0 / freq_dist_tag_single.N())
