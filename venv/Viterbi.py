@@ -93,7 +93,7 @@ def construct_final_tag(back_pointer, best_last_tag_est, non_beg_or_end_states, 
     return best_tags_array
 
 
-def viterbi_path(sent, freq_dist_tag_single, freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
+def viterbi_path(word_list, freq_dist_tag_single, freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
                  freq_dist_tagBigram_SMOOTH,
                  freq_dist_tagWordPairWithStartEnd_SMOOTH):
     start = '<s>'
@@ -101,7 +101,7 @@ def viterbi_path(sent, freq_dist_tag_single, freq_dist_tag_single_SMOOTH, freq_d
     end = '</s>'
     prob_start = 1.0
 
-    word_list = [w for (w, _) in sent]
+    # word_list = [w for (w, _) in sent]
     # create a list of states without start or end states
     non_beg_or_end_states = list(freq_dist_tag_single.keys())
     non_beg_or_end_states.remove(start)

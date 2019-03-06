@@ -4,27 +4,21 @@ from nltk import ngrams, bigrams
 from nltk.parse import viterbi
 
 import Viterbi as vit
+import ErrorAnalysis as error
 
 
-def measure_performance_single_sentence(test_sent_tags_actual, test_sent_tags_est):
-    if (len(test_sent_tags_actual) != len(test_sent_tags_est)):
-        print("ERROR: SIZE IS NOT THE SAME")
-        print("test actual:", test_sent_tags_actual)
-        print("test est:", test_sent_tags_est)
-        return 10**10
+def tag_all_sentences_viterbi(test_sents, freq_dist_tag_single, freq_dist_tag_single_SMOOTH,
+                              freq_dist_tagWordPair_SMOOTH,
+                              freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH):
+    tag_estimated_by_viterbi = []
 
+    for test_sent in test_sents:
+        tag_sequence = vit.viterbi_path(test_sent, freq_dist_tag_single, freq_dist_tag_single_SMOOTH,
+                                        freq_dist_tagWordPair_SMOOTH,
+                                        freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
+        tag_estimated_by_viterbi.append(tag_sequence)
 
-
-    sum_error = 0
-    for i in range(0, len(test_sent_tags_est)):
-        if(test_sent_tags_est[i] != test_sent_tags_actual[i]):
-            sum_error += 1
-
-    return sum_error
-
-def show_sent(sents):
-    for sent in sents[:5]:
-        print(sent)
+    return tag_estimated_by_viterbi
 
 
 start = '<s>'
@@ -41,8 +35,10 @@ test_sents = sents[train_size:train_size + test_size]
 
 train_words_individual = [[]] * len(train_sents)
 train_tags_individual = [[]] * len(train_sents)
-test_words_individual = [[]] * len(test_sents)
-test_tags_individual = [[]] * len(test_sents)
+# test_words_individual = [[]] * len(test_sents)
+# test_tags_individual = [[]] * len(test_sents)
+test_words_individual = []
+test_tags_individual = []
 
 freq_dist_tag_single = FreqDist()
 freq_dist_tagWordPair = FreqDist()
@@ -69,9 +65,8 @@ for sent in test_sents:
     word_list = [w for (w, _) in sent]
     tag_list = [t for (_, t) in sent]
 
-
-    test_words_individual[j].insert(0, word_list)
-    test_tags_individual[j].insert(0, tag_list)
+    test_words_individual.append(word_list)
+    test_tags_individual.append(tag_list)
     j += 1
 
 # print(train_words_individual[0][:])
@@ -87,40 +82,13 @@ freq_dist_tagWordPairWithStartEnd_SMOOTH = WittenBellProbDist(freq_dist_tagWordP
 freq_dist_tagBigram_SMOOTH = WittenBellProbDist(freq_dist_tagBigram, bins=1e5)
 
 print(test_sents[0])
-test_sent_tags_est = vit.viterbi_path(test_sents[0], freq_dist_tag_single, freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
-                 freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
+# test_sent_tags_est = vit.viterbi_path(test_words_individual[0], freq_dist_tag_single, freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
+#                  freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
 
+all_test_sent_tags_est = tag_all_sentences_viterbi(test_words_individual, freq_dist_tag_single,
+                                                   freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
+                                                   freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
 
-
-word_list_act = [w for (w, _) in test_sents[0]]
-tag_list_act = [t for (_, t) in test_sents[0]]
-
-perf = 1.0- measure_performance_single_sentence(tag_list_act[1:-1], test_sent_tags_est)*1.0 /len(test_sent_tags_est)
-
-print("actual")
-print(tag_list_act)
-print("est")
-print(test_sent_tags_est)
-
-print(perf)
-
-# print("unsmoothed prob = ",freq_dist_tag_single["NOUN"]*1.0 / freq_dist_tag_single.N())
-# print("smoothed prob = ",freq_dist_tag_single_SMOOTH.prob("NOUN"))
-
-# print(freq_dist_tagWordPair.most_common(15))
-# print(freq_dist_tagBigram.most_common(15))
-
-
-# for
-
-
-train_sents = [sent for sent in train_sents]
-
-train_sents_single = []
-for sent in train_sents:
-    train_sents_single = train_sents_single + sent
-
-
-
+overall_error, overall_N, overall_large_error_index = error.measure_performance_all_sentence(test_tags_individual, all_test_sent_tags_est)
 
 
