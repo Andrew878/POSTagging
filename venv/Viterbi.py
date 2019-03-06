@@ -56,14 +56,14 @@ def final_step_return_max_prob_and_best_path(exisiting_viterbi, current_state, n
         prob_est = exisiting_viterbi[previous_word_index][previous_state_index] + log(
             freq_dist_tagBigram_SMOOTH.prob(tag_pair_to_test))
 
-        print("prob est is", prob_est)
-        print("max prob is", maximum_prob)
+        # print("prob est is", prob_est)
+        # print("max prob is", maximum_prob)
 
         if (maximum_prob < prob_est):
             maximum_prob = prob_est
             maximum_origin = non_beg_or_end_states[previous_state_index]
 
-        print("max prob is", maximum_prob)
+        # print("max prob is", maximum_prob)
 
     print("returning max prob and max origin ", maximum_prob, maximum_origin)
 

@@ -2,7 +2,7 @@ from nltk.corpus import brown
 from nltk import FreqDist, WittenBellProbDist
 from nltk import ngrams, bigrams
 from nltk.parse import viterbi
-from nltk.metrics import ConfusionMatrix
+from nltk.metrics import ConfusionMatrix, accuracy
 
 import Viterbi as vit
 
@@ -45,18 +45,18 @@ def measure_performance_all_sentence(test_sent_tags_actual, test_sent_tags_est, 
         for i in range(total_num_act_sent):
             length_sent_actual = len(test_sent_tags_actual[i][1:-1])
             error_for_sent = measure_performance_single_sentence(test_sent_tags_actual[i][1:-1], test_sent_tags_est[i])
-            print("sentence ", i)
+            # print("sentence ", i)
 
             if (LARGE_ERROR_THRESHOLD > 1.0 - (error_for_sent * 1.0 / length_sent_actual)):
-                print("---------------")
-                print("error is ", error_for_sent)
-                print("out of ", length_sent_actual)
-                print("Score for sentence i", i, (1.0 - (error_for_sent * 1.0 / length_sent_actual)))
-                print("actual")
-                print(test_sent_tags_actual[i][1:-1])
-                print("estimated")
-                print(test_sent_tags_est[i])
-                print("LARGE ERROR")
+                # print("---------------")
+                # print("error is ", error_for_sent)
+                # print("out of ", length_sent_actual)
+                # print("Score for sentence i", i, (1.0 - (error_for_sent * 1.0 / length_sent_actual)))
+                # print("actual")
+                # print(test_sent_tags_actual[i][1:-1])
+                # print("estimated")
+                # print(test_sent_tags_est[i])
+                # print("LARGE ERROR")
                 overall_large_error_count += 1
                 overall_large_error_index.append(i)
 
@@ -76,19 +76,20 @@ def large_error_analysis(overall_large_error_index, all_test_tags_actual, all_te
     print()
 
 
-def get_confusion_matrix_for_sent_size(test_sent_tags_actual, test_sent_tags_est, sent_length=100):
+def get_confusion_matrix_for_sent_size(test_sent_tags_actual, test_sent_tags_est, max_sent_length=100):
     single_line_act_tags = []
     single_line_est_tags = []
 
     for sent_index in range(len(test_sent_tags_actual)):
 
-        if (len(test_sent_tags_actual[sent_index]) < sent_length):
-            single_line_act_tags += single_line_act_tags + [test_sent_tags_actual[sent_index]]
-            single_line_est_tags += single_line_est_tags + [test_sent_tags_est[sent_index]]
+        if (len(test_sent_tags_actual[sent_index]) <= max_sent_length):
+            single_line_act_tags = single_line_act_tags + test_sent_tags_actual[sent_index][1:-1]
+            single_line_est_tags = single_line_est_tags + test_sent_tags_est[sent_index]
 
-            print(single_line_est_tags)
-            print(single_line_act_tags)
+    print(single_line_est_tags)
+    print(single_line_act_tags)
 
     cm = ConfusionMatrix(single_line_act_tags, single_line_est_tags)
 
-    print (cm)
+    print(accuracy(single_line_act_tags, single_line_est_tags))
+    print(cm)
