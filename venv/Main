@@ -29,7 +29,7 @@ sents = brown.tagged_sents(tagset='universal')
 sents = [[(start, start)] + sent + [(end, end)] for sent in sents if len(sent) < max_sentence_length]
 
 train_size = 1000
-test_size = 500
+test_size = 10
 train_sents = sents[:train_size]
 test_sents = sents[train_size:train_size + test_size]
 
@@ -44,6 +44,8 @@ freq_dist_tag_single = FreqDist()
 freq_dist_tagWordPair = FreqDist()
 freq_dist_tagWordPairWithStartEnd = FreqDist()
 freq_dist_tagBigram = FreqDist()
+
+unique_tag_dict = dict.fromkeys(freq_dist_tag_single.keys())
 
 j = 0
 for sent in train_sents:
@@ -85,10 +87,15 @@ print(test_sents[0])
 # test_sent_tags_est = vit.viterbi_path(test_words_individual[0], freq_dist_tag_single, freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
 #                  freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
 
-all_test_sent_tags_est = tag_all_sentences_viterbi(test_words_individual, freq_dist_tag_single,
+
+test_words_to_tag = test_words_individual
+
+all_test_sent_tags_est = tag_all_sentences_viterbi(test_words_to_tag, freq_dist_tag_single,
                                                    freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
                                                    freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
 
-overall_error, overall_N, overall_large_error_index = error.measure_performance_all_sentence(test_tags_individual, all_test_sent_tags_est)
+
+
+overall_error, overall_N, overall_large_error_index = error.measure_performance_all_sentence(test_tags_individual, all_test_sent_tags_est, unique_tag_dict)
 
 

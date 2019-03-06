@@ -106,8 +106,8 @@ def viterbi_path(word_list, freq_dist_tag_single, freq_dist_tag_single_SMOOTH, f
     non_beg_or_end_states = list(freq_dist_tag_single.keys())
     non_beg_or_end_states.remove(start)
     tag_to_index_dict = dict.fromkeys(non_beg_or_end_states)
-
     non_beg_or_end_states.remove(end)
+
     viterbi = [['' for x in range(len(non_beg_or_end_states))] for y in range(len(word_list))]
 
     back_pointer = [['' for x in range(len(non_beg_or_end_states))] for y in range(len(word_list))]

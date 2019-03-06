@@ -2,8 +2,10 @@ from nltk.corpus import brown
 from nltk import FreqDist, WittenBellProbDist
 from nltk import ngrams, bigrams
 from nltk.parse import viterbi
+from nltk.metrics import ConfusionMatrix
 
 import Viterbi as vit
+
 
 def measure_performance_single_sentence(test_sent_tags_actual, test_sent_tags_est):
     if (len(test_sent_tags_actual) != len(test_sent_tags_est)):
@@ -20,13 +22,16 @@ def measure_performance_single_sentence(test_sent_tags_actual, test_sent_tags_es
     return sum_error
 
 
-def measure_performance_all_sentence(test_sent_tags_actual, test_sent_tags_est):
+def measure_performance_all_sentence(test_sent_tags_actual, test_sent_tags_est, unique_tag_dict):
     overall_error = 0
     overall_N = 0
     overall_large_error_count = 0
     overall_large_error_index = []
     LARGE_ERROR_THRESHOLD = 0.70
 
+    for unique_tag in unique_tag_dict.keys():
+        # we wish to understand three features [tag chosen, actual tag, size sentence]
+        unique_tag_dict[unique_tag] = dict.fromkeys(unique_tag_dict.keys())
 
     total_num_est_sent = len(test_sent_tags_est)
     total_num_act_sent = len(test_sent_tags_actual)
@@ -40,9 +45,9 @@ def measure_performance_all_sentence(test_sent_tags_actual, test_sent_tags_est):
         for i in range(total_num_act_sent):
             length_sent_actual = len(test_sent_tags_actual[i][1:-1])
             error_for_sent = measure_performance_single_sentence(test_sent_tags_actual[i][1:-1], test_sent_tags_est[i])
-            print("sentence ",i)
+            print("sentence ", i)
 
-            if(LARGE_ERROR_THRESHOLD > 1.0 - (error_for_sent * 1.0 / length_sent_actual)):
+            if (LARGE_ERROR_THRESHOLD > 1.0 - (error_for_sent * 1.0 / length_sent_actual)):
                 print("---------------")
                 print("error is ", error_for_sent)
                 print("out of ", length_sent_actual)
@@ -65,4 +70,25 @@ def measure_performance_all_sentence(test_sent_tags_actual, test_sent_tags_est):
 
     return overall_error, overall_N, overall_large_error_index;
 
-def large_error_analysis():
+
+def large_error_analysis(overall_large_error_index, all_test_tags_actual, all_test_sent_tags_est):
+    # for i in range(len(overall_large_error_index)):
+    print()
+
+
+def get_confusion_matrix_for_sent_size(test_sent_tags_actual, test_sent_tags_est, sent_length=100):
+    single_line_act_tags = []
+    single_line_est_tags = []
+
+    for sent_index in range(len(test_sent_tags_actual)):
+
+        if (len(test_sent_tags_actual[sent_index]) < sent_length):
+            single_line_act_tags += single_line_act_tags + [test_sent_tags_actual[sent_index]]
+            single_line_est_tags += single_line_est_tags + [test_sent_tags_est[sent_index]]
+
+            print(single_line_est_tags)
+            print(single_line_act_tags)
+
+    cm = ConfusionMatrix(single_line_act_tags, single_line_est_tags)
+
+    print (cm)
