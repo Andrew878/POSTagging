@@ -22,22 +22,23 @@ class BeamSearch:
 
             tag_pair_to_test = (non_beg_or_end_states[previous_state_index], current_state)
 
-            # print(current_tag_word_pair)
-            # print(tag_pair_to_test)
-            # print("previous vit at location = ", previous_word_index, previous_state_index,
-            #       exisiting_viterbi[previous_word_index][previous_state_index])
+            print("current_tag_word_pair",current_tag_word_pair)
+            print("tag_pair_to_test",tag_pair_to_test)
+            print("previous vit at location = ", previous_word_index, previous_state_index,
+                  exisiting_viterbi[previous_word_index][previous_state_index])
+            print("tag transition prob = ", log(freq_dist_tagBigram_SMOOTH.prob(tag_pair_to_test)))
 
             prob_est = exisiting_viterbi[previous_word_index][previous_state_index] + log(
                 freq_dist_tagBigram_SMOOTH.prob(tag_pair_to_test))
 
-            # print("prob est is", prob_est)
-            # print("max prob is", maximum_prob)
+            print("prob est is", prob_est)
+            print("max prob is", maximum_prob)
 
             if (maximum_prob < prob_est):
                 maximum_prob = prob_est
                 maximum_origin = non_beg_or_end_states[previous_state_index]
 
-            # print("max prob is", maximum_prob)
+            print("max prob is", maximum_prob)
 
         print(
             "returning max prob and max origin ",
@@ -57,8 +58,8 @@ class BeamSearch:
         top_state_index_references = []
         # print(list_of_v)
         list_of_v.sort(reverse = True)
-        # print(list_of_v)
-        # print(value_to_index_dict)
+        print(list_of_v)
+        print(value_to_index_dict)
         # print("range(self.beam_width)",range(self.beam_width))
         # print("(self.beam_width)",(self.beam_width))
 
@@ -91,8 +92,10 @@ class BeamSearch:
             prob_est = exisiting_viterbi[previous_word_index][previous_state_index] + log(
                 freq_dist_tagBigram_SMOOTH.prob(tag_pair_to_test))
 
-            # print("prob est is", prob_est)
-            # print("max prob is", maximum_prob)
+            print("tag_pair_to_test, final stage", tag_pair_to_test)
+            print("previous vit at location, final stage = ", previous_word_index, previous_state_index,
+                  exisiting_viterbi[previous_word_index][previous_state_index])
+            print("tag transition prob, final stage = ", log(freq_dist_tagBigram_SMOOTH.prob(tag_pair_to_test)))
 
             if (maximum_prob < prob_est):
                 maximum_prob = prob_est
@@ -100,7 +103,7 @@ class BeamSearch:
 
             # print("max prob is", maximum_prob)
 
-        print("returning max prob and max origin ", maximum_prob, maximum_origin)
+        print("returning max prob and max origin, final stage ", maximum_prob, maximum_origin)
 
         return maximum_prob, maximum_origin;
 
@@ -201,6 +204,6 @@ class BeamSearch:
         final_best_tag = self.construct_final_tag(back_pointer, best_last_tag_est, non_beg_or_end_states,
                                                   tag_to_index_dict, word_list)
 
-        # print(final_best_tag)
+        print(final_best_tag)
 
         return (final_best_tag)

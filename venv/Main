@@ -1,6 +1,7 @@
 from nltk.corpus import brown
 from nltk import FreqDist, WittenBellProbDist
 from nltk import ngrams, bigrams
+from nltk import tag
 from nltk.parse import viterbi
 
 import Viterbi as vit
@@ -23,19 +24,22 @@ def tag_all_sentences_viterbi(test_sents, freq_dist_tag_single, freq_dist_tag_si
 
 
 def tag_all_sentences_beam(test_sents, freq_dist_tag_single, freq_dist_tag_single_SMOOTH,
-                              freq_dist_tagWordPair_SMOOTH,
-                              freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH, beam_width):
+                           freq_dist_tagWordPair_SMOOTH,
+                           freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH, beam_width):
     tag_estimated_by_viterbi = []
     # minus two to remove start and end tags
     beam_search_vit = BeamSearch.BeamSearch(beam_width)
+
+    i=0
     for test_sent in test_sents:
+        print ("Sent index", i)
         tag_sequence = beam_search_vit.viterbi_path(test_sent, freq_dist_tag_single, freq_dist_tag_single_SMOOTH,
-                                        freq_dist_tagWordPair_SMOOTH,
-                                        freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
+                                                    freq_dist_tagWordPair_SMOOTH,
+                                                    freq_dist_tagBigram_SMOOTH,
+                                                    freq_dist_tagWordPairWithStartEnd_SMOOTH)
         tag_estimated_by_viterbi.append(tag_sequence)
-
+        i += 1
     return tag_estimated_by_viterbi
-
 
 
 start = '<s>'
@@ -45,8 +49,8 @@ sents = brown.tagged_sents(tagset='universal')
 
 sents = [[(start, start)] + sent + [(end, end)] for sent in sents if len(sent) < max_sentence_length]
 
-train_size = 10000
-test_size = 500
+train_size = 1000 #100.
+test_size = 5
 train_sents = sents[:train_size]
 test_sents = sents[train_size:train_size + test_size]
 
@@ -106,6 +110,9 @@ freq_dist_tagBigram_SMOOTH = WittenBellProbDist(freq_dist_tagBigram, bins=1e5)
 test_words_to_tag = test_words_individual
 test_sent_tags_act = test_tags_individual
 
+print("Sentence:", test_words_individual)
+print("tags:", test_tags_individual)
+
 # all_test_sent_tags_est = tag_all_sentences_viterbi(test_words_to_tag, freq_dist_tag_single,
 #                                                    freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
 #                                                    freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
@@ -117,17 +124,19 @@ test_sent_tags_act = test_tags_individual
 #                  freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
 
 all_test_sent_tags_est_beam_all = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
-                                                   freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
-                                                   freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH, len(list(freq_dist_tag_single.keys()))-2)
+                                                         freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
+                                                         freq_dist_tagBigram_SMOOTH,
+                                                         freq_dist_tagWordPairWithStartEnd_SMOOTH,
+                                                         len(list(freq_dist_tag_single.keys())) - 2)
 
-all_test_sent_tags_est_beam_one = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
-                                                   freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
-                                                   freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH, 1)
+# all_test_sent_tags_est_beam_one = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
+#                                                    freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
+#                                                    freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH, 1)
 
 all_test_sent_tags_est_beam_five = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
-                                                   freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
-                                                   freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH, 3)
-
+                                                          freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
+                                                          freq_dist_tagBigram_SMOOTH,
+                                                          freq_dist_tagWordPairWithStartEnd_SMOOTH, 3)
 
 # print(error.measure_performance_all_sentence(test_sent_tags_act, all_test_sent_tags_est ))
 #
@@ -140,11 +149,12 @@ all_test_sent_tags_est_beam_five = tag_all_sentences_beam(test_words_to_tag, fre
 # overall_error, overall_N, overall_large_error_index = error.measure_performance_all_sentence(test_sent_tags_act, all_test_sent_tags_est_beam , unique_tag_dict)
 
 
-
-
 # overall_error, overall_N, overall_large_error_index = error.measure_performance_all_sentence(test_sent_tags_act, all_test_sent_tags_est, unique_tag_dict)
 #
 # error.get_confusion_matrix_for_sent_size(test_sent_tags_act,all_test_sent_tags_est, 100)
-error.get_confusion_matrix_for_sent_size(test_sent_tags_act,all_test_sent_tags_est_beam_all, 100)
-error.get_confusion_matrix_for_sent_size(test_sent_tags_act,all_test_sent_tags_est_beam_one, 100)
-error.get_confusion_matrix_for_sent_size(test_sent_tags_act,all_test_sent_tags_est_beam_five, 100)
+error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_all, 100)
+# error.get_confusion_matrix_for_sent_size(test_sent_tags_act,all_test_sent_tags_est_beam_one, 100)
+error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_five, 100)
+
+# error.compare_two_approaches(test_sent_tags_act, all_test_sent_tags_est_beam_all, "beam all",
+#                              all_test_sent_tags_est_beam_five, "beam 5")
