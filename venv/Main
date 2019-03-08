@@ -1,13 +1,14 @@
 from nltk.corpus import brown
 from nltk import FreqDist, WittenBellProbDist
 from nltk import ngrams, bigrams
-from nltk import tag
-from nltk.parse import viterbi
+from nltk import tag, tokenize
+from math import log, exp
 
 import Viterbi as vit
 import ErrorAnalysis as error
 import BeamSearch
 import BeamClass
+import ForwardProbabilities
 
 
 def tag_all_sentences_viterbi(test_sents, freq_dist_tag_single, freq_dist_tag_single_SMOOTH,
@@ -28,7 +29,7 @@ def tag_all_sentences_beam(test_sents, freq_dist_tag_single,smoothed_tag_tag, sm
 
     tag_estimated_by_viterbi = []
     # minus two to remove start and end tags
-    beam_search_vit = BeamSearch.BeamSearch(beam_width)
+    beam_search_vit = BeamSearch.BeamSearch(freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag, beam_width)
 
     i = 0
     for test_sent in test_sents:
@@ -44,8 +45,8 @@ start = '<s>'
 end = '</s>'
 max_sentence_length = 101
 sents = brown.tagged_sents(tagset='universal')
-train_size = 10000  # 100.
-test_size = 500
+train_size = 1000  # 100.
+test_size = 50
 
 sents = [[(start, start)] + sent + [(end, end)] for sent in sents if len(sent) < max_sentence_length]
 
@@ -178,24 +179,22 @@ test_sent_tags_act = test_tags_individual
 #                                                    freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
 
 
-# Viterbi = BeamClass.BeamSearch(len(unique_tag_list), freq_dist_tagBigram_SMOOTH,
-#                                freq_dist_tagWordPairWithStartEnd_SMOOTH, unique_tag_list)
-# Viterbi.find_highest_path(test_words_individual[0])
+forward_prob_calculator = ForwardProbabilities.ForwardProbabilities(freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag)
 
-# beam_search_vit = BeamSearch.BeamSearch(len(list(freq_dist_tag_single.keys())))
+f_prob = forward_prob_calculator.return_forward_prob(tokenize.word_tokenize("Hi, how are you?"))
+
+print(f_prob)
+print(exp(f_prob))
+
+# all_test_sent_tags_est_beam_all = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
+#                                                          smoothed_tag_tag, smoothed_word_tag,
+#                                                          len(list(freq_dist_tag_single.keys())) - 2)
 #
-# test_sent_tags_est_beam = beam_search_vit.viterbi_path(test_words_to_tag, freq_dist_tag_single, freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
-#                  freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
-
-all_test_sent_tags_est_beam_all = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
-                                                         smoothed_tag_tag, smoothed_word_tag,
-                                                         len(list(freq_dist_tag_single.keys())) - 2)
-
-all_test_sent_tags_est_beam_one = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
-                                                         smoothed_tag_tag, smoothed_word_tag, 1)
-
-all_test_sent_tags_est_beam_three = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
-                                                         smoothed_tag_tag, smoothed_word_tag, 3)
+# all_test_sent_tags_est_beam_one = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
+#                                                          smoothed_tag_tag, smoothed_word_tag, 1)
+#
+# all_test_sent_tags_est_beam_three = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
+#                                                          smoothed_tag_tag, smoothed_word_tag, 3)
 
 # print(error.measure_performance_all_sentence(test_sent_tags_act, all_test_sent_tags_est ))
 #
@@ -211,9 +210,9 @@ all_test_sent_tags_est_beam_three = tag_all_sentences_beam(test_words_to_tag, fr
 # overall_error, overall_N, overall_large_error_index = error.measure_performance_all_sentence(test_sent_tags_act, all_test_sent_tags_est, unique_tag_dict)
 #
 # error.get_confusion_matrix_for_sent_size(test_sent_tags_act,all_test_sent_tags_est, 100)
-error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_all, 100)
-error.get_confusion_matrix_for_sent_size(test_sent_tags_act,all_test_sent_tags_est_beam_one, 100)
-error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_three, 100)
-#
+# error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_all, 100)
+# error.get_confusion_matrix_for_sent_size(test_sent_tags_act,all_test_sent_tags_est_beam_one, 100)
+# error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_three, 100)
+# #
 # error.compare_two_approaches(test_sent_tags_act, all_test_sent_tags_est_beam_all, "beam all",
 #                              all_test_sent_tags_est_beam_five, "beam 5")
