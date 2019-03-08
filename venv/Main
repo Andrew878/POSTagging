@@ -9,6 +9,7 @@ import ErrorAnalysis as error
 import BeamSearch
 import BeamClass
 import ForwardProbabilities
+import BackwardProbabilities
 
 
 def tag_all_sentences_viterbi(test_sents, freq_dist_tag_single, freq_dist_tag_single_SMOOTH,
@@ -183,8 +184,27 @@ forward_prob_calculator = ForwardProbabilities.ForwardProbabilities(freq_dist_ta
 
 f_prob = forward_prob_calculator.return_forward_prob(tokenize.word_tokenize("Hi, how are you?"))
 
+backward_prob_calculator = BackwardProbabilities.BackwardProbabilities(freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag)
+
+b_prob = backward_prob_calculator.return_backward_prob(tokenize.word_tokenize("Hi, how are you?"))
+
+test_sentence = tokenize.word_tokenize("Hi, how are you?")
+
+
+
 print(f_prob)
 print(exp(f_prob))
+print(b_prob)
+print(exp(b_prob))
+
+def forward_and_backward_combined(sent,freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag):
+    forward_prob_calculator = ForwardProbabilities.ForwardProbabilities(freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag)
+    backward_prob_calculator = BackwardProbabilities.BackwardProbabilities(freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag)
+
+    for(word in sent):
+        f_prob = forward_prob_calculator.return_forward_prob()
+        b_prob = backward_prob_calculator.return_backward_prob()
+
 
 # all_test_sent_tags_est_beam_all = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
 #                                                          smoothed_tag_tag, smoothed_word_tag,
