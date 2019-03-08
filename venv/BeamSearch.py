@@ -7,10 +7,10 @@ class BeamSearch:
     def __init__(self, beam_width):
         self.beam_width = beam_width
 
+
     def return_max_prob_and_best_path(self, exisiting_viterbi, current_state, current_word, non_beg_or_end_states,
                                       previous_word_index,
-                                      freq_dist_tagWordPair_SMOOTH,
-                                      freq_dist_tagBigramNoStartEnd_SMOOTH):
+                                      smoothed_tag_tag, smoothed_word_tag):
         maximum_prob = -10 ** 10
         maximum_origin = 0
         current_tag_word_pair = (current_word, current_state)
@@ -22,14 +22,15 @@ class BeamSearch:
 
             tag_pair_to_test = (non_beg_or_end_states[previous_state_index], current_state)
 
-            print("current_tag_word_pair",current_tag_word_pair)
-            print("tag_pair_to_test",tag_pair_to_test)
+            print("current_tag_word_pair", current_tag_word_pair)
+            print("tag_pair_to_test", tag_pair_to_test)
             print("previous vit at location = ", previous_word_index, previous_state_index,
                   exisiting_viterbi[previous_word_index][previous_state_index])
-            print("tag transition prob = ", log(freq_dist_tagBigramNoStartEnd_SMOOTH.prob(tag_pair_to_test)))
+            print("tag transition prob = ",
+                  log(smoothed_tag_tag[non_beg_or_end_states[previous_state_index]].prob(current_state)))
 
             prob_est = exisiting_viterbi[previous_word_index][previous_state_index] + log(
-                freq_dist_tagBigramNoStartEnd_SMOOTH.prob(tag_pair_to_test))
+                smoothed_tag_tag[non_beg_or_end_states[previous_state_index]].prob(current_state))
 
             print("prob est is", prob_est)
             print("max prob is", maximum_prob)
@@ -42,10 +43,10 @@ class BeamSearch:
 
         print(
             "returning max prob and max origin ",
-            maximum_prob + log(freq_dist_tagWordPair_SMOOTH.prob(current_tag_word_pair)),
+            maximum_prob + log(smoothed_word_tag[current_state].prob(current_word)),
             maximum_origin)
 
-        return maximum_prob + log(freq_dist_tagWordPair_SMOOTH.prob(current_tag_word_pair)), maximum_origin;
+        return maximum_prob + log(smoothed_word_tag[current_state].prob(current_word)), maximum_origin;
 
     def find_top_k_tags(self, previous_word_index, exisiting_viterbi):
 
@@ -53,11 +54,11 @@ class BeamSearch:
         https://stackoverflow.com/questions/36459969/python-convert-list-to-dictionary-with-indexes"""
 
         list_of_v = [v for v in exisiting_viterbi[previous_word_index]]
-        value_to_index_dict = dict(map(reversed, enumerate(list_of_v )))
+        value_to_index_dict = dict(map(reversed, enumerate(list_of_v)))
 
         top_state_index_references = []
         # print(list_of_v)
-        list_of_v.sort(reverse = True)
+        list_of_v.sort(reverse=True)
         print(list_of_v)
         print(value_to_index_dict)
         # print("range(self.beam_width)",range(self.beam_width))
@@ -75,7 +76,7 @@ class BeamSearch:
 
     def final_step_return_max_prob_and_best_path(self, exisiting_viterbi, current_state, non_beg_or_end_states,
                                                  previous_word_index,
-                                                 freq_dist_tagBigram_SMOOTH):
+                                                 smoothed_tag_tag):
         maximum_prob = -10 ** 10
         maximum_origin = 0
 
@@ -90,12 +91,13 @@ class BeamSearch:
             #       exisiting_viterbi[previous_word_index][previous_state_index])
 
             prob_est = exisiting_viterbi[previous_word_index][previous_state_index] + log(
-                freq_dist_tagBigram_SMOOTH.prob(tag_pair_to_test))
+                smoothed_tag_tag[non_beg_or_end_states[previous_state_index]].prob(current_state))
 
             print("tag_pair_to_test, final stage", tag_pair_to_test)
             print("previous vit at location, final stage = ", previous_word_index, previous_state_index,
                   exisiting_viterbi[previous_word_index][previous_state_index])
-            print("tag transition prob, final stage = ", log(freq_dist_tagBigram_SMOOTH.prob(tag_pair_to_test)))
+            print("tag transition prob, final stage = ", log(
+                smoothed_tag_tag[non_beg_or_end_states[previous_state_index]].prob(current_state)))
 
             if (maximum_prob < prob_est):
                 maximum_prob = prob_est
@@ -129,9 +131,7 @@ class BeamSearch:
 
         return best_tags_array
 
-    def viterbi_path(self, word_list, freq_dist_tag_single, freq_dist_tagBigramNoStartEnd_SMOOTH, freq_dist_tagWordPair_SMOOTH,
-                     freq_dist_tagBigram_SMOOTH,
-                     freq_dist_tagWordPairWithStartEnd_SMOOTH):
+    def viterbi_path(self, word_list, freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag):
         start = '<s>'
 
         end = '</s>'
@@ -149,7 +149,9 @@ class BeamSearch:
         back_pointer = [['' for x in range(len(non_beg_or_end_states))] for y in range(len(word_list))]
 
         print(viterbi)
+
         state_num = 0
+        print(word_list)
 
         for state in non_beg_or_end_states:
 
@@ -160,8 +162,8 @@ class BeamSearch:
             word_given_tag_pair = (word_list[1], state)
             # print("word_given_tag_pair = ", word_given_tag_pair)
 
-            a = log(freq_dist_tagBigram_SMOOTH.prob(to_from_tag_pair))
-            b = log(freq_dist_tagWordPair_SMOOTH.prob(word_given_tag_pair))
+            a = log(smoothed_tag_tag[start].prob(state))
+            b = log(smoothed_word_tag[state].prob(word_list[1]))
 
             if (state == start):
                 viterbi[0][state_num] = log(1)
@@ -178,16 +180,14 @@ class BeamSearch:
 
             state_num = 0
             for state in non_beg_or_end_states:
-                print("word investigated",word)
+                print("word investigated", word)
                 print(word_list[2:-1])
                 viterbi[word_num][state_num], back_pointer[word_num][state_num] = self.return_max_prob_and_best_path(
                     viterbi,
                     state,
                     word,
                     non_beg_or_end_states,
-                    word_num - 1,
-                    freq_dist_tagWordPair_SMOOTH,
-                    freq_dist_tagBigramNoStartEnd_SMOOTH)
+                    word_num - 1, smoothed_tag_tag, smoothed_word_tag)
                 state_num += 1
                 # print("viterbi")
                 # print(viterbi)
@@ -199,7 +199,7 @@ class BeamSearch:
         max_last_prob, best_last_tag_est = self.final_step_return_max_prob_and_best_path(viterbi, end,
                                                                                          non_beg_or_end_states,
                                                                                          word_num - 1,
-                                                                                         freq_dist_tagBigram_SMOOTH)
+                                                                                         smoothed_tag_tag)
 
         # print("best_last_tag_est ", best_last_tag_est)
 
