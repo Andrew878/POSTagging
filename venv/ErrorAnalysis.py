@@ -86,8 +86,8 @@ def get_confusion_matrix_for_sent_size(test_sent_tags_actual, test_sent_tags_est
             single_line_act_tags = single_line_act_tags + test_sent_tags_actual[sent_index][1:-1]
             single_line_est_tags = single_line_est_tags + test_sent_tags_est[sent_index]
 
-    print(single_line_est_tags)
-    print(single_line_act_tags)
+    print("CM single_line_est_tags ", single_line_est_tags)
+    print("CM single_line_act_tags", single_line_act_tags)
 
     cm = ConfusionMatrix(single_line_act_tags, single_line_est_tags)
 
@@ -95,18 +95,20 @@ def get_confusion_matrix_for_sent_size(test_sent_tags_actual, test_sent_tags_est
     print(cm)
 
 
-def compare_two_approaches(test_sent_tags_actual, test_sent_tags_est_1, est_1_name,test_sent_tags_est_2, est_2_name):
-
+def compare_two_approaches(test_sent_tags_actual, test_sent_tags_est_1, est_1_name, test_sent_tags_est_2, est_2_name):
     for sent_index in range(len(test_sent_tags_actual)):
 
         different_flag = False
         for tag_index in range(len(test_sent_tags_est_1[sent_index])):
-            if(test_sent_tags_est_1[sent_index][tag_index] != test_sent_tags_est_2[sent_index][tag_index]):
+            if (test_sent_tags_est_1[sent_index][tag_index] != test_sent_tags_est_2[sent_index][tag_index]) and (
+                    test_sent_tags_actual[sent_index][tag_index+1] == test_sent_tags_est_2[sent_index][tag_index]):
                 different_flag = True
 
-        if(different_flag):
+        if (different_flag):
             print ("Sent index", sent_index)
             print (est_1_name)
             print (test_sent_tags_est_1[sent_index])
             print (est_2_name)
             print (test_sent_tags_est_2[sent_index])
+            print ("actual")
+            print (test_sent_tags_actual[sent_index])

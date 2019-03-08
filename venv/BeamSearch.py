@@ -10,7 +10,7 @@ class BeamSearch:
     def return_max_prob_and_best_path(self, exisiting_viterbi, current_state, current_word, non_beg_or_end_states,
                                       previous_word_index,
                                       freq_dist_tagWordPair_SMOOTH,
-                                      freq_dist_tagBigram_SMOOTH):
+                                      freq_dist_tagBigramNoStartEnd_SMOOTH):
         maximum_prob = -10 ** 10
         maximum_origin = 0
         current_tag_word_pair = (current_word, current_state)
@@ -26,10 +26,10 @@ class BeamSearch:
             print("tag_pair_to_test",tag_pair_to_test)
             print("previous vit at location = ", previous_word_index, previous_state_index,
                   exisiting_viterbi[previous_word_index][previous_state_index])
-            print("tag transition prob = ", log(freq_dist_tagBigram_SMOOTH.prob(tag_pair_to_test)))
+            print("tag transition prob = ", log(freq_dist_tagBigramNoStartEnd_SMOOTH.prob(tag_pair_to_test)))
 
             prob_est = exisiting_viterbi[previous_word_index][previous_state_index] + log(
-                freq_dist_tagBigram_SMOOTH.prob(tag_pair_to_test))
+                freq_dist_tagBigramNoStartEnd_SMOOTH.prob(tag_pair_to_test))
 
             print("prob est is", prob_est)
             print("max prob is", maximum_prob)
@@ -109,27 +109,27 @@ class BeamSearch:
 
     def construct_final_tag(self, back_pointer, best_last_tag_est, non_beg_or_end_states, tag_to_index_dict, word_list):
         best_tags_array = []
-        # best_tags_array.append(best_last_tag_est)
+        best_tags_array.append(best_last_tag_est)
         index = tag_to_index_dict[best_last_tag_est]
 
-        for i in range(len(back_pointer) - 1, 1, -1):
-            # print("i", i)
-            # print("index", index)
+        for i in range(len(back_pointer) - 2, 1, -1):
+            print("i", i)
+            print("index", index)
             current_tag = back_pointer[i][index]
             best_tags_array.append(current_tag)
             index = tag_to_index_dict[current_tag]
-            # print(best_tags_array)
-            # print("word", word_list[i])
+            print(best_tags_array)
+            print("word", word_list[i])
 
         best_tags_array.reverse()
 
-        # print("FINAL")
-        # print(word_list)
-        # print(best_tags_array)
+        print("FINAL")
+        print(word_list)
+        print(best_tags_array)
 
         return best_tags_array
 
-    def viterbi_path(self, word_list, freq_dist_tag_single, freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
+    def viterbi_path(self, word_list, freq_dist_tag_single, freq_dist_tagBigramNoStartEnd_SMOOTH, freq_dist_tagWordPair_SMOOTH,
                      freq_dist_tagBigram_SMOOTH,
                      freq_dist_tagWordPairWithStartEnd_SMOOTH):
         start = '<s>'
@@ -160,7 +160,7 @@ class BeamSearch:
             word_given_tag_pair = (word_list[1], state)
             # print("word_given_tag_pair = ", word_given_tag_pair)
 
-            a = log(freq_dist_tagBigram_SMOOTH.prob(to_from_tag_pair)) + log(prob_start)
+            a = log(freq_dist_tagBigram_SMOOTH.prob(to_from_tag_pair))
             b = log(freq_dist_tagWordPair_SMOOTH.prob(word_given_tag_pair))
 
             if (state == start):
@@ -174,10 +174,12 @@ class BeamSearch:
         print(back_pointer[:][:])
 
         word_num = 2
-        for word in word_list[2:]:
+        for word in word_list[2:-1]:
 
             state_num = 0
             for state in non_beg_or_end_states:
+                print("word investigated",word)
+                print(word_list[2:-1])
                 viterbi[word_num][state_num], back_pointer[word_num][state_num] = self.return_max_prob_and_best_path(
                     viterbi,
                     state,
@@ -185,7 +187,7 @@ class BeamSearch:
                     non_beg_or_end_states,
                     word_num - 1,
                     freq_dist_tagWordPair_SMOOTH,
-                    freq_dist_tagBigram_SMOOTH)
+                    freq_dist_tagBigramNoStartEnd_SMOOTH)
                 state_num += 1
                 # print("viterbi")
                 # print(viterbi)
