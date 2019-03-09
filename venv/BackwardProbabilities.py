@@ -29,18 +29,18 @@ class BackwardProbabilities:
         for previous_state_index in range(len(self.non_beg_or_end_states)):
             tag_pair_to_test = (self.non_beg_or_end_states[previous_state_index], current_state)
 
-            print("current_tag_word_pair", current_tag_word_pair)
-            print("tag_pair_to_test", tag_pair_to_test)
-            print("previous vit at location = ", previous_word_index, previous_state_index,
-                  exisiting_alpha[previous_word_index][previous_state_index])
-            print("tag transition prob = ",
-                  log(self.smoothed_tag_tag[current_state].prob(self.non_beg_or_end_states[previous_state_index])))
+            # print("current_tag_word_pair", current_tag_word_pair)
+            # print("tag_pair_to_test", tag_pair_to_test)
+            # print("previous vit at location = ", previous_word_index, previous_state_index,
+            #       exisiting_alpha[previous_word_index][previous_state_index])
+            # print("tag transition prob = ",
+            #       log(self.smoothed_tag_tag[current_state].prob(self.non_beg_or_end_states[previous_state_index])))
 
             prob_est += exp(exisiting_alpha[previous_word_index][previous_state_index] + log(
                 self.smoothed_tag_tag[current_state].prob(
                     self.non_beg_or_end_states[previous_state_index])) + prob_current_word_given_state)
 
-        print("summed prob", log(prob_est))
+        # print("summed prob", log(prob_est))
 
         return log(prob_est)
 
@@ -58,13 +58,13 @@ class BackwardProbabilities:
             prob_est += exp(exisiting_alpha[previous_word_index][previous_state_index] + log(
                 self.smoothed_tag_tag[self.start].prob(self.non_beg_or_end_states[previous_state_index])))
 
-            print("tag_pair_to_test, final stage", tag_pair_to_test)
-            print("previous exisiting_alpha at location, final stage = ", previous_word_index, previous_state_index,
-                  exisiting_alpha[previous_word_index][previous_state_index])
-            print("tag transition prob, final stage = ", log(
-                self.smoothed_tag_tag[self.start].prob(self.non_beg_or_end_states[previous_state_index])))
-
-            print("summed prob", log(prob_est))
+            # print("tag_pair_to_test, final stage", tag_pair_to_test)
+            # print("previous exisiting_alpha at location, final stage = ", previous_word_index, previous_state_index,
+            #       exisiting_alpha[previous_word_index][previous_state_index])
+            # print("tag transition prob, final stage = ", log(
+            #     self.smoothed_tag_tag[self.start].prob(self.non_beg_or_end_states[previous_state_index])))
+            #
+            # print("summed prob", log(prob_est))
 
             # print("max prob is", maximum_prob)
 
@@ -89,16 +89,7 @@ class BackwardProbabilities:
         state_num = 0
         print(word_list)
 
-        for state in self.non_beg_or_end_states:
-            self.tag_to_index_dict[state] = state_num
-            a = log(self.smoothed_tag_tag[state].prob(self.end))
-            b = log(self.smoothed_word_tag[state].prob(word_list[1]))
-
-            # if (state == start):
-            #     viterbi[0][state_num] = log(1)
-
-            alpha[1][state_num] = a + b
-            state_num += 1
+        self.intialise_matrix_values(alpha, state_num, word_list)
 
         word_num = 2
         for word in word_list[2:-1]:
@@ -122,4 +113,16 @@ class BackwardProbabilities:
 
         total_path_prob = self.final_return_prob_sum(alpha, word_num - 1)
 
-        return total_path_prob
+        return total_path_prob, alpha;
+
+    def intialise_matrix_values(self, alpha, state_num, word_list):
+        for state in self.non_beg_or_end_states:
+            self.tag_to_index_dict[state] = state_num
+            a = log(self.smoothed_tag_tag[state].prob(self.end))
+            b = log(self.smoothed_word_tag[state].prob(word_list[1]))
+
+            # if (state == start):
+            #     viterbi[0][state_num] = log(1)
+
+            alpha[1][state_num] = a + b
+            state_num += 1
