@@ -1,8 +1,9 @@
 from nltk.corpus import brown
 from nltk import FreqDist, WittenBellProbDist
 from nltk import ngrams, bigrams
-from nltk import tag, tokenize
+from nltk import tag, tokenize, accuracy
 from math import log, exp
+import time
 
 import Viterbi as vit
 import ErrorAnalysis as error
@@ -40,13 +41,13 @@ def tag_all_sentences_beam(test_sents, freq_dist_tag_single, smoothed_tag_tag, s
         i += 1
     return tag_estimated_by_beam
 
+
 def tag_all_sentences_forward_Back(test_sents, freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag):
     tag_estimated_by_beam = []
 
     forward_prob_calculator = ForwardProbabilities.ForwardProbabilities(freq_dist_tag_single, smoothed_tag_tag,
                                                                         smoothed_word_tag)
     backward_prob_calculator = BackwardProbabilities.BackwardProbabilities(freq_dist_tag_single, smoothed_tag_tag,
-
 
                                                                            smoothed_word_tag)
     f_prob, alpha = forward_prob_calculator.return_forward_prob(sent)
@@ -57,12 +58,12 @@ def tag_all_sentences_forward_Back(test_sents, freq_dist_tag_single, smoothed_ta
     non_beg_or_end_states.remove('</s>')
     tag_to_index_dict = dict.fromkeys(non_beg_or_end_states)
 
-
     i = 0
     for test_sent in test_sents:
         # print ("Sent index", i)
         # print("words", test_sent)
-        tag_sequence = forward_and_backward_combined(test_sent, forward_prob_calculator,backward_prob_calculator,non_beg_or_end_states)
+        tag_sequence = forward_and_backward_combined(test_sent, forward_prob_calculator, backward_prob_calculator,
+                                                     non_beg_or_end_states)
         tag_estimated_by_beam.append(tag_sequence)
         i += 1
     return tag_estimated_by_beam
@@ -73,7 +74,7 @@ end = '</s>'
 max_sentence_length = 101
 sents = brown.tagged_sents(tagset='universal')
 train_size = 10000  # 100.
-test_size = 500
+test_size = 1000
 
 sents = [[(start, start)] + sent + [(end, end)] for sent in sents if len(sent) < max_sentence_length]
 
@@ -95,7 +96,7 @@ freq_dist_tagBigramWithoutStartEnd = FreqDist()
 
 bigrams_tags = []
 j = 0
-print
+
 for sent in train_sents:
     word_list = [w for (w, _) in sent]
     tag_list = [t for (_, t) in sent]
@@ -139,7 +140,7 @@ un_smoothed = {}
 smoothed_tag_tag = {}
 tags.add(start)
 
-print(list(bigrams_tags[0]))
+# print(list(bigrams_tags[0]))
 
 for bigram_list in bigrams_tags:
 
@@ -195,7 +196,6 @@ test_words_to_tag = test_words_individual
 test_sent_tags_act = test_tags_individual
 
 
-
 # print("Sentence:", test_words_individual)
 # print("tags:", test_tags_individual)
 
@@ -216,8 +216,7 @@ def show(sents):
         print sent
 
 
-def forward_and_backward_combined(sent, forward_prob_calculator,backward_prob_calculator,non_beg_or_end_states):
-
+def forward_and_backward_combined(sent, forward_prob_calculator, backward_prob_calculator, non_beg_or_end_states):
     f_prob, alpha = forward_prob_calculator.return_forward_prob(sent)
     b_prob, beta = backward_prob_calculator.return_backward_prob(sent)
     sent.reverse()
@@ -231,14 +230,13 @@ def forward_and_backward_combined(sent, forward_prob_calculator,backward_prob_ca
     # show(beta)
     tag_estimated_by_forward_backward = []
 
-
     # word_index_alpha = 2 + 1
     # word_index_beta = len(sent) - word_index_alpha
     sentence_length = len(sent)
-    for word_index in range(1,sentence_length-1):
+    for word_index in range(1, sentence_length - 1):
 
         word_index_alpha = word_index
-        word_index_beta = (sentence_length-1) - word_index_alpha
+        word_index_beta = (sentence_length - 1) - word_index_alpha
 
         max_prob = -10 ** 10
         max_prob_state = None
@@ -251,7 +249,8 @@ def forward_and_backward_combined(sent, forward_prob_calculator,backward_prob_ca
             forward_prob_to_state = alpha[word_index_alpha][tested_state_index]
             back_prob_to_state = beta[word_index_beta][tested_state_index]
             # print("forward_prob ", forward_prob_to_state, "backward_prob ", back_prob_to_state,)
-            prob_est = forward_prob_to_state + back_prob_to_state
+            prob_est = forward_prob_to_state + back_prob_to_state - smoothed_word_tag[
+                non_beg_or_end_states[tested_state_index]].prob(sent[word_index_alpha])
 
             # print("max prob", max_prob)
             # print("max_prob_state ", non_beg_or_end_states[tested_state_index])
@@ -271,6 +270,7 @@ def forward_and_backward_combined(sent, forward_prob_calculator,backward_prob_ca
     # print("tag_estimated_by_forward_backward",tag_estimated_by_forward_backward)
     return tag_estimated_by_forward_backward
 
+
 # test_sentence = ['<s>', 'how', 'are', 'you', '?', '</s>']
 
 # forward_and_backward_combined(test_sentence, freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag)
@@ -280,47 +280,147 @@ def forward_and_backward_combined(sent, forward_prob_calculator,backward_prob_ca
 # print(b_prob)
 # print(exp(b_prob))
 
-
+time_start = time.time()
 all_test_sent_tags_est_beam_all = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
                                                          smoothed_tag_tag, smoothed_word_tag,
                                                          len(list(freq_dist_tag_single.keys())) - 2)
+time_end = time.time()
+beam_all_time = time_end - time_start
 
+time_start = time.time()
 all_test_sent_tags_est_beam_one = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
                                                          smoothed_tag_tag, smoothed_word_tag, 1)
+time_end = time.time()
+beam_one_time = time_end - time_start
 
+time_start = time.time()
 all_test_sent_tags_est_beam_three = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
-                                                         smoothed_tag_tag, smoothed_word_tag, 3)
+                                                           smoothed_tag_tag, smoothed_word_tag, 3)
+time_end = time.time()
+beam_three_time = time_end - time_start
 
+time_start = time.time()
 all_test_sent_tags_est_beam_five = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
-                                                         smoothed_tag_tag, smoothed_word_tag, 5)
+                                                          smoothed_tag_tag, smoothed_word_tag, 5)
+time_end = time.time()
+beam_five_time = time_end - time_start
 
+time_start = time.time()
+all_test_sent_tags_est_beam_seven = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
+                                                           smoothed_tag_tag, smoothed_word_tag, 7)
+time_end = time.time()
+beam_seven_time = time_end - time_start
+
+time_start = time.time()
+all_test_sent_tags_est_beam_nine = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
+                                                          smoothed_tag_tag, smoothed_word_tag, 9)
+time_end = time.time()
+beam_nine_time = time_end - time_start
+
+time_start = time.time()
+all_test_sent_tags_est_beam_eleven = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
+                                                            smoothed_tag_tag, smoothed_word_tag, 11)
+time_end = time.time()
+beam_eleven_eleven = time_end - time_start
+
+time_start = time.time()
 all_test_sent_tags_est_forward_back = tag_all_sentences_forward_Back(test_words_to_tag, freq_dist_tag_single,
-                                                         smoothed_tag_tag, smoothed_word_tag)
+                                                                     smoothed_tag_tag, smoothed_word_tag)
+time_end = time.time()
+ford_back_time = time_end - time_start
 
-# print(error.measure_performance_all_sentence(test_sent_tags_act, all_test_sent_tags_est ))
-#
-#
-# print(error.measure_performance_all_sentence(test_sent_tags_act, test_sent_tags_est_beam))
 
-# print("normal viterbi")
-# overall_error, overall_N, overall_large_error_index = error.measure_performance_all_sentence(test_sent_tags_act, all_test_sent_tags_est, unique_tag_dict)
-# print("beam search viterbi")
-# overall_error, overall_N, overall_large_error_index = error.measure_performance_all_sentence(test_sent_tags_act, all_test_sent_tags_est_beam , unique_tag_dict)
 
-# print(test_words_to_tag)
-# print(test_sent_tags_act)
-# overall_error, overall_N, overall_large_error_index = error.measure_performance_all_sentence(test_sent_tags_act, all_test_sent_tags_est, unique_tag_dict)
-#
-print("\n\n------------------Viterbi------------------------\n")
-error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_all, 100)
-print("\n\n------------------Beam One------------------------\n")
-error.get_confusion_matrix_for_sent_size(test_sent_tags_act,all_test_sent_tags_est_beam_one, 100)
-print("\n\n------------------Beam Three------------------------\n")
-error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_three, 100)
-print("\n\n------------------Beam Five------------------------\n")
-error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_five, 100)
-print("\n\n------------------Back/Forward------------------------\n")
-error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_forward_back, 100)
+
+
+
+print("----- Testing Time -------")
+min_sentence_size = 0
+min_tag_diversity = 0
+print("\ntrain_size ", train_size)
+print("test_size ", test_size)
+error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_all, min_sentence_size,min_tag_diversity,
+                                         "all_test_sent_tags_est_beam_all" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity) + "," + str(
+                                             beam_all_time))
+error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_one, min_sentence_size,min_tag_diversity,
+                                         "all_test_sent_tags_est_beam_one" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity) + "," + str(
+                                             beam_one_time))
+error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_three, min_sentence_size,min_tag_diversity,
+                                         "all_test_sent_tags_est_beam_three" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity) + "," + str(
+                                             beam_three_time))
+error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_five, min_sentence_size,min_tag_diversity,
+                                         "all_test_sent_tags_est_beam_five" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity) + "," + str(
+                                             beam_five_time))
+error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_seven, min_sentence_size,min_tag_diversity,
+                                         "all_test_sent_tags_est_beam_seven" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity) + "," + str(
+                                             beam_seven_time))
+error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_nine, min_sentence_size,min_tag_diversity,
+                                         "all_test_sent_tags_est_beam_nine" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity) + "," + str(
+                                             beam_nine_time))
+error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_eleven, min_sentence_size,min_tag_diversity,
+                                         "all_test_sent_tags_est_beam_eleven" + "," + str(
+                                             min_sentence_size)+ "," + str(min_tag_diversity) + "," + str(beam_eleven_eleven))
 # #
 # error.compare_two_approaches(test_sent_tags_act, all_test_sent_tags_est_beam_all, "beam all",
 #                              all_test_sent_tags_est_beam_five, "beam 5")
+
+print("----- Testing sentence size -------")
+print("\ntrain_size ", train_size)
+print("test_size ", test_size)
+min_tag_diversity = 0
+
+for min_sentence_size in range(10, 100, 10):
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_one, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_one" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_three, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_three" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_five, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_five" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_seven, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_seven" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_nine, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_nine" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_eleven, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_eleven" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_all, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_all" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+
+print("----- Testing tag diversity -------")
+print("\ntrain_size ", train_size)
+print("test_size ", test_size)
+min_sentence_size = 0
+
+for min_tag_diversity in range(1, 13):
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_one, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_one" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_three, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_three" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_five, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_five" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_seven, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_seven" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_nine, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_nine" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_eleven, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_eleven" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+    error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_all, min_sentence_size,min_tag_diversity,
+                                             "all_test_sent_tags_est_beam_all" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
+
+
+print("----- Confusion Matrices -------\n")
+print("Beam one")
+error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_one, 0)
+print("Beam three")
+error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_three, 0)
+print("Beam five")
+error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_five, 0)
+print("Beam seven")
+error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_seven, 0)
+print("Beam nine")
+error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_nine, 0)
+print("Beam eleven")
+error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_eleven, 0)
+print("Beam all")
+error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_all, 0)
+print("forward, backward")
+error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_forward_back, 0)

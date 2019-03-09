@@ -76,23 +76,24 @@ def large_error_analysis(overall_large_error_index, all_test_tags_actual, all_te
     print()
 
 
-def get_confusion_matrix_for_sent_size(test_sent_tags_actual, test_sent_tags_est, max_sent_length=100):
+def get_confusion_matrix_for_sent_size(test_sent_tags_actual, test_sent_tags_est, min_sent_length=100):
     single_line_act_tags = []
     single_line_est_tags = []
 
     for sent_index in range(len(test_sent_tags_actual)):
-
-        if (len(test_sent_tags_actual[sent_index]) <= max_sent_length):
+        # print("len(test_sent_tags_actual[sent_index])", len(test_sent_tags_actual[sent_index]))
+        if (len(test_sent_tags_actual[sent_index]) >= min_sent_length):
             single_line_act_tags = single_line_act_tags + test_sent_tags_actual[sent_index][1:-1]
             single_line_est_tags = single_line_est_tags + test_sent_tags_est[sent_index]
 
-    print("CM single_line_est_tags ", single_line_est_tags)
-    print("CM single_line_act_tags", single_line_act_tags)
+    # print("CM single_line_est_tags ", single_line_est_tags)
+    # print("CM single_line_act_tags", single_line_act_tags)
 
     cm = ConfusionMatrix(single_line_act_tags, single_line_est_tags)
 
-    print(accuracy(single_line_act_tags, single_line_est_tags))
-    print(cm)
+    print("accuracy is ", accuracy(single_line_act_tags, single_line_est_tags))
+    print(cm.pretty_format(sort_by_count=True, show_percents=True, truncate=12))
+
 
 
 def compare_two_approaches(test_sent_tags_actual, test_sent_tags_est_1, est_1_name, test_sent_tags_est_2, est_2_name):
@@ -101,7 +102,7 @@ def compare_two_approaches(test_sent_tags_actual, test_sent_tags_est_1, est_1_na
         different_flag = False
         for tag_index in range(len(test_sent_tags_est_1[sent_index])):
             if (test_sent_tags_est_1[sent_index][tag_index] != test_sent_tags_est_2[sent_index][tag_index]) and (
-                    test_sent_tags_actual[sent_index][tag_index+1] == test_sent_tags_est_2[sent_index][tag_index]):
+                    test_sent_tags_actual[sent_index][tag_index + 1] == test_sent_tags_est_2[sent_index][tag_index]):
                 different_flag = True
 
         if (different_flag):
@@ -112,3 +113,20 @@ def compare_two_approaches(test_sent_tags_actual, test_sent_tags_est_1, est_1_na
             print (test_sent_tags_est_2[sent_index])
             print ("actual")
             print (test_sent_tags_actual[sent_index])
+
+
+def compare_accuracy_for_sentence_size(test_sent_tags_actual, test_sent_tags_est, min_sent_length, min_tag_diversity, name):
+    single_line_act_tags = []
+    single_line_est_tags = []
+
+    non_zero_demominator = False
+
+    for sent_index in range(len(test_sent_tags_actual)):
+        tag_diversity = set(test_sent_tags_actual[sent_index])
+        if (len(test_sent_tags_actual[sent_index]) >= min_sent_length) and tag_diversity >= min_tag_diversity:
+            single_line_act_tags = single_line_act_tags + test_sent_tags_actual[sent_index][1:-1]
+            single_line_est_tags = single_line_est_tags + test_sent_tags_est[sent_index]
+            non_zero_demominator = True
+
+    if (non_zero_demominator):
+        print(name, accuracy(single_line_act_tags, single_line_est_tags))

@@ -39,12 +39,12 @@ class ForwardProbabilities:
 
             prob_est += exp(exisiting_alpha[previous_word_index][previous_state_index] + log(
                 self.smoothed_tag_tag[self.non_beg_or_end_states[previous_state_index]].prob(
-                    current_state)) + prob_current_word_given_state)
+                    current_state)) )
 
 
         # print("summed prob", log(prob_est))
 
-        return log(prob_est)
+        return log(prob_est)+ prob_current_word_given_state
 
     def final_return_prob_sum(self, exisiting_alpha, previous_word_index):
 
@@ -86,14 +86,14 @@ class ForwardProbabilities:
 
         alpha = [['' for x in range(len(self.non_beg_or_end_states))] for y in range(len(word_list))]
 
-        print(alpha)
+        # print(alpha)
 
         state_num = 0
-        print(word_list)
+        # print(word_list)
 
         self.intialise_matrix_values(alpha, state_num, word_list)
 
-        print(alpha[:][:])
+        # print(alpha[:][:])
 
         word_num = 2
         for word in word_list[2:-1]:
