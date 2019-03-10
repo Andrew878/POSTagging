@@ -13,61 +13,103 @@ import ForwardProbabilities
 import BackwardProbabilities
 
 
-def tag_all_sentences_viterbi(test_sents, freq_dist_tag_single, freq_dist_tag_single_SMOOTH,
-                              freq_dist_tagWordPair_SMOOTH,
-                              freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH):
-    tag_estimated_by_viterbi = []
-
-    for test_sent in test_sents:
-        tag_sequence = vit.viterbi_path(test_sent, freq_dist_tag_single, freq_dist_tag_single_SMOOTH,
-                                        freq_dist_tagWordPair_SMOOTH,
-                                        freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
-        tag_estimated_by_viterbi.append(tag_sequence)
-
-    return tag_estimated_by_viterbi
-
 
 def tag_all_sentences_beam(test_sents, freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag, beam_width):
+
+    """Tag all sentences using Beam search. Return results"""
+
     tag_estimated_by_beam = []
-    # minus two to remove start and end tags
+
+    # Create appropriate beam search objects
     beam_search_vit = BeamSearch.BeamSearch(freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag, beam_width)
 
-    i = 0
+    # tag each sentence
     for test_sent in test_sents:
-        # print ("Sent index", i)
-        # print("words", test_sent)
         tag_sequence = beam_search_vit.viterbi_path(test_sent)
         tag_estimated_by_beam.append(tag_sequence)
-        i += 1
+
     return tag_estimated_by_beam
 
 
 def tag_all_sentences_forward_Back(test_sents, freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag):
-    tag_estimated_by_beam = []
 
+    """Tag all sentences using Beam search. Return results"""
+
+    tag_estimated_by_fwd_bwd = []
+
+    # Create appropriate forward, backward objects
     forward_prob_calculator = ForwardProbabilities.ForwardProbabilities(freq_dist_tag_single, smoothed_tag_tag,
                                                                         smoothed_word_tag)
     backward_prob_calculator = BackwardProbabilities.BackwardProbabilities(freq_dist_tag_single, smoothed_tag_tag,
-
                                                                            smoothed_word_tag)
-    f_prob, alpha = forward_prob_calculator.return_forward_prob(sent)
-    b_prob, beta = backward_prob_calculator.return_backward_prob(sent)
+
 
     non_beg_or_end_states = list(freq_dist_tag_single.keys())
     non_beg_or_end_states.remove('<s>')
     non_beg_or_end_states.remove('</s>')
-    tag_to_index_dict = dict.fromkeys(non_beg_or_end_states)
 
-    i = 0
+    # tag each sentence
     for test_sent in test_sents:
-        # print ("Sent index", i)
-        # print("words", test_sent)
         tag_sequence = forward_and_backward_combined(test_sent, forward_prob_calculator, backward_prob_calculator,
                                                      non_beg_or_end_states)
-        tag_estimated_by_beam.append(tag_sequence)
-        i += 1
-    return tag_estimated_by_beam
+        tag_estimated_by_fwd_bwd.append(tag_sequence)
 
+    return tag_estimated_by_fwd_bwd
+
+
+def forward_and_backward_combined(sent, forward_prob_calculator, backward_prob_calculator, non_beg_or_end_states):
+    """Takes Forward Prob and Backward objects and returns an estimated list of tags for a single sentence. Note,
+    all probabilities are in log form """
+
+    # obtain alpha, beta matrices for the sentence
+    f_prob, alpha = forward_prob_calculator.return_forward_prob(sent)
+    b_prob, beta = backward_prob_calculator.return_backward_prob(sent)
+
+    # need to reverse the sentence (because it was previously reversed in the backward prob object)
+    sent.reverse()
+
+    tag_estimated_by_forward_backward = []
+
+    # cycle through each word of the sentence (ignoring start/end tokens)
+    sentence_length = len(sent)
+    for word_index in range(1, sentence_length - 1):
+
+        # calculates the appropriate indices for aplha and beta matrices (recall that beta matrix is backwards)
+        word_index_alpha = word_index
+        word_index_beta = (sentence_length - 1) - word_index_alpha
+
+        max_prob = -10 ** 10
+        max_prob_state = None
+
+        # for each token, cycle through each state and calculate the probability of it occurring using forward and backward probs
+        for tested_state_index in range(0, len(non_beg_or_end_states)):
+
+            # forward log prob to that token, that that particular state
+            forward_prob_to_state = alpha[word_index_alpha][tested_state_index]
+
+            # backward log prob to that token, that that particular state
+            back_prob_to_state = beta[word_index_beta][tested_state_index]
+
+            # calculate prob estimate
+            # note, entries in alpha and beta matrices both include an emission prob. To avoid double counting this prob,
+            # and adhere to the forward-backward formula, we need to remove it once.
+            prob_est = forward_prob_to_state + back_prob_to_state - smoothed_word_tag[
+                non_beg_or_end_states[tested_state_index]].prob(sent[word_index_alpha])
+
+            # find the state that maximises prob
+            if (max_prob < prob_est):
+                max_prob = prob_est
+                max_prob_state = non_beg_or_end_states[tested_state_index]
+
+        # construct estimated tag sequence with highest prob tags
+        tag_estimated_by_forward_backward.append(max_prob_state)
+
+    # return after going through entire sentence
+    return tag_estimated_by_forward_backward
+
+
+
+#-------------- Intialise variables, preprocess data set-----------------
 
 # start and end symbols
 start = '<s>'
@@ -84,17 +126,11 @@ sents = [[(start, start)] + sent + [(end, end)] for sent in sents[:train_size + 
 train_sents = sents[:train_size]
 test_sents = sents[train_size:train_size + test_size]
 
+# Initialise variables
 test_words_individual = []
 test_tags_individual = []
-
 freq_dist_tag_single = FreqDist()
-freq_dist_tagWordPair = FreqDist()
-freq_dist_tagWordPairWithStartEnd = FreqDist()
-freq_dist_tagBigram = FreqDist()
-freq_dist_tagBigramWithoutStartEnd = FreqDist()
-
 bigrams_tags = []
-j = 0
 
 #-------------- process training set -----------------
 # (1): we need a list of unique states/tags
@@ -134,127 +170,40 @@ un_smoothed = {}
 smoothed_tag_tag = {}
 tags.add(start)
 
-# (6): for
+# (6): for each tag bigram, count the frequency
 for bigram_list in bigrams_tags:
 
     bigram_sent = list(bigram_list)
     for tag in tags:
-        # print(tag)
 
         following_tag = [t2 for (t1, t2) in bigram_sent if t1 == tag]
-
-        # print(following_tag)
 
         if (not un_smoothed.has_key(tag)):
             un_smoothed[tag] = FreqDist(following_tag)
         else:
             un_smoothed[tag] += FreqDist(following_tag)
+
+# (7): For each tag bigram, find the smoothed probabilities using WittenBell
 for tag in tags:
     smoothed_tag_tag[tag] = WittenBellProbDist(un_smoothed[tag], bins=1e5)
 
-# print('prob of NOUN -> VERB is', smoothed_tag_tag['NOUN'].prob('VERB'))
-# print('prob of DET -> NOUN is', smoothed_tag_tag['DET'].prob('NOUN'))
 
-
-j = 0
+#-------------- process test set -----------------
+# split test into tokens and states
 for sent in test_sents:
     word_list = [w for (w, _) in sent]
     tag_list = [t for (_, t) in sent]
 
     test_words_individual.append(word_list)
     test_tags_individual.append(tag_list)
-    j += 1
-
-
 
 
 test_words_to_tag = test_words_individual
 test_sent_tags_act = test_tags_individual
 
 
-# print("Sentence:", test_words_individual)
-# print("tags:", test_tags_individual)
+#-------------- Perform tagging on test set using various methods -----------------
 
-# all_test_sent_tags_est = tag_all_sentences_viterbi(test_words_to_tag, freq_dist_tag_single,
-#                                                    freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
-#                                                    freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
-
-
-# forward_prob_calculator = ForwardProbabilities.ForwardProbabilities(freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag)
-# f_prob, alpha = forward_prob_calculator.return_forward_prob(tokenize.word_tokenize("Hi, how are you?"))
-#
-# backward_prob_calculator = BackwardProbabilities.BackwardProbabilities(freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag)
-#
-# b_prob, beta = backward_prob_calculator.return_backward_prob(tokenize.word_tokenize("Hi, how are you?"))
-
-def show(sents):
-    for sent in sents:
-        print sent
-
-
-def forward_and_backward_combined(sent, forward_prob_calculator, backward_prob_calculator, non_beg_or_end_states):
-    f_prob, alpha = forward_prob_calculator.return_forward_prob(sent)
-    b_prob, beta = backward_prob_calculator.return_backward_prob(sent)
-    sent.reverse()
-
-    # print(sent)
-    # print("alpha")
-    # print(f_prob)
-    # show(alpha)
-    # print("beta")
-    # print(b_prob)
-    # show(beta)
-    tag_estimated_by_forward_backward = []
-
-    # word_index_alpha = 2 + 1
-    # word_index_beta = len(sent) - word_index_alpha
-    sentence_length = len(sent)
-    for word_index in range(1, sentence_length - 1):
-
-        word_index_alpha = word_index
-        word_index_beta = (sentence_length - 1) - word_index_alpha
-
-        max_prob = -10 ** 10
-        max_prob_state = None
-        for tested_state_index in range(0, len(non_beg_or_end_states)):
-
-            # print("word_index_alpha",word_index_alpha)
-            # print("word_index_beta",word_index_beta)
-            #
-            # print("----------------------------------- testing word ", sent[word_index_alpha], " state tested ", non_beg_or_end_states[tested_state_index])
-            forward_prob_to_state = alpha[word_index_alpha][tested_state_index]
-            back_prob_to_state = beta[word_index_beta][tested_state_index]
-            # print("forward_prob ", forward_prob_to_state, "backward_prob ", back_prob_to_state,)
-            prob_est = forward_prob_to_state + back_prob_to_state - smoothed_word_tag[
-                non_beg_or_end_states[tested_state_index]].prob(sent[word_index_alpha])
-
-            # print("max prob", max_prob)
-            # print("max_prob_state ", non_beg_or_end_states[tested_state_index])
-            # print("prob_est", prob_est)
-
-            if (max_prob < prob_est):
-                max_prob = prob_est
-                max_prob_state = non_beg_or_end_states[tested_state_index]
-
-            # print("max prob", max_prob)
-            # print("max_prob_state ", non_beg_or_end_states[tested_state_index])
-
-        # print("******returning max prob and max state********", max_prob, max_prob_state)
-        tag_estimated_by_forward_backward.append(max_prob_state)
-
-    # print(sent)
-    # print("tag_estimated_by_forward_backward",tag_estimated_by_forward_backward)
-    return tag_estimated_by_forward_backward
-
-
-# test_sentence = ['<s>', 'how', 'are', 'you', '?', '</s>']
-
-# forward_and_backward_combined(test_sentence, freq_dist_tag_single, smoothed_tag_tag, smoothed_word_tag)
-
-# print(f_prob)
-# print(exp(f_prob))
-# print(b_prob)
-# print(exp(b_prob))
 
 time_start = time.time()
 all_test_sent_tags_est_beam_all = tag_all_sentences_beam(test_words_to_tag, freq_dist_tag_single,
@@ -306,8 +255,7 @@ time_end = time.time()
 ford_back_time = time_end - time_start
 
 
-
-
+#-------------- Perform analysis on results-----------------
 
 
 print("----- Testing Time -------")
@@ -336,9 +284,10 @@ error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_
 error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_eleven, min_sentence_size,min_tag_diversity,
                                          "all_test_sent_tags_est_beam_eleven" + "," + str(
                                              min_sentence_size)+ "," + str(min_tag_diversity) + "," + str(beam_eleven_eleven))
-# #
-# error.compare_two_approaches(test_sent_tags_act, all_test_sent_tags_est_beam_all, "beam all",
-#                              all_test_sent_tags_est_beam_five, "beam 5")
+error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_forward_back, min_sentence_size,min_tag_diversity,
+                                         "all_test_sent_tags_est_forward_back" + "," + str(
+                                             min_sentence_size)+ "," + str(min_tag_diversity) + "," + str(ford_back_time))
+
 
 print("----- Testing sentence size -------")
 print("\ntrain_size ", train_size)
