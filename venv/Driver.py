@@ -116,7 +116,7 @@ start = '<s>'
 end = '</s>'
 max_sentence_length = 101
 sents = brown.tagged_sents(tagset='universal')
-train_size = 20000
+train_size = 10000
 test_size = 500
 
 # add start and end states and tokens to each sentence. Making sure sentences are not too long (to avoid underflow)
@@ -260,7 +260,7 @@ print("-------------- Perform analysis on results-----------------------------")
 
 print("")
 print("----- Testing Time to complete-------")
-print(2)
+print("")
 min_sentence_size = 0
 min_tag_diversity = 0
 print("train_size ", train_size)
