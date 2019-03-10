@@ -132,7 +132,7 @@ test_tags_individual = []
 freq_dist_tag_single = FreqDist()
 bigrams_tags = []
 
-print("-------------- process training set -----------------")
+print("-------------- Processing training set ---------------------------------")
 # (1): we need a list of unique states/tags
 for sent in train_sents:
 
@@ -158,7 +158,7 @@ for sent in train_sents:
         if (not un_smoothed.has_key(tag)):
             un_smoothed[tag] = FreqDist(words)
         else:
-            un_smoothed[tag] += FreqDist(words)
+            un_smoothed[tag].update(words)
 
 # (4): For each tag, find the smoothed probabilities using WittenBell
 for tag in tags:
@@ -181,14 +181,15 @@ for bigram_list in bigrams_tags:
         if (not un_smoothed.has_key(tag)):
             un_smoothed[tag] = FreqDist(following_tag)
         else:
-            un_smoothed[tag] += FreqDist(following_tag)
+            un_smoothed[tag].update(following_tag)
+
 
 # (7): For each tag bigram, find the smoothed probabilities using WittenBell
 for tag in tags:
     smoothed_tag_tag[tag] = WittenBellProbDist(un_smoothed[tag], bins=1e5)
 
 
-print("-------------- process test set -----------------")
+print("-------------- Processing test set -------------------------------------")
 # split test into tokens and states
 for sent in test_sents:
     word_list = [w for (w, _) in sent]
@@ -202,7 +203,7 @@ test_words_to_tag = test_words_individual
 test_sent_tags_act = test_tags_individual
 
 
-print("-------------- Perform tagging on test set using various methods -----------------")
+print("-------------- Performing tagging on test set using various methods ----")
 
 
 time_start = time.time()
@@ -255,11 +256,11 @@ time_end = time.time()
 ford_back_time = time_end - time_start
 
 
-print("-------------- Perform analysis on results-----------------")
+print("-------------- Perform analysis on results-----------------------------")
 
-print()
+print("")
 print("----- Testing Time to complete-------")
-print()
+print(2)
 min_sentence_size = 0
 min_tag_diversity = 0
 print("train_size ", train_size)
@@ -289,9 +290,9 @@ error.compare_accuracy(test_sent_tags_act, all_test_sent_tags_est_forward_back, 
                                          "all_test_sent_tags_est_forward_back" + "," + str(
                                              min_sentence_size)+ "," + str(min_tag_diversity) + "," + str(ford_back_time))
 
-print()
-print("----- Testing accuracy versus sentence size -------")
-print()
+print("")
+print("----- Testing accuracy versus sentence size -----------------------")
+print("")
 print("train_size ", train_size)
 print("test_size ", test_size)
 min_tag_diversity = 0
@@ -311,9 +312,9 @@ for min_sentence_size in range(0, 100, 10):
                                              "all_test_sent_tags_est_beam_eleven" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
     error.compare_accuracy_for_sentence_size(test_sent_tags_act, all_test_sent_tags_est_beam_all, min_sentence_size,min_tag_diversity,
                                              "all_test_sent_tags_est_beam_all" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
-print()
-print("----- Testing accuracy versus tag diversity -------")
-print()
+print("")
+print("----- Testing accuracy versus tag diversity -----------------------")
+print("")
 print("\ntrain_size ", train_size)
 print("test_size ", test_size)
 min_sentence_size = 0
@@ -334,9 +335,9 @@ for min_tag_diversity in range(1, 13):
     error.compare_accuracy_for_tag_diversity(test_sent_tags_act, all_test_sent_tags_est_beam_all, min_sentence_size,min_tag_diversity,
                                              "all_test_sent_tags_est_beam_all" + "," + str(min_sentence_size)+ "," + str(min_tag_diversity))
 
-print()
-print("----- Overall Confusion Matrices and Accuracy-------\n")
-print()
+print("")
+print("----- Overall Confusion Matrices and Accuracy-----------------------")
+print("")
 print("Beam one:")
 error.get_confusion_matrix_for_sent_size(test_sent_tags_act, all_test_sent_tags_est_beam_one, 0)
 print("Beam three:")

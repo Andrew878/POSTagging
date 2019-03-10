@@ -124,13 +124,14 @@ def compare_two_approaches(test_sent_tags_actual, test_sent_tags_est_1, est_1_na
 
 
 def compare_accuracy_for_sentence_size(test_sent_tags_actual, test_sent_tags_est, min_sent_length, min_tag_diversity, name):
+
+    """Computes accuracy for a est tagged test set. Does it for a particular sentence size """
+
     single_line_act_tags = []
     single_line_est_tags = []
+    bucket_size = 10
 
-    """Computes accuracy for a est tagged test set. Does it for a paticular sentence size and also number of 
-    unique POS states (labelled sentence diversity)"""
-
-    # to ensure no NaN results
+    # to prevent NaN results
     non_zero_demominator = False
 
     # cycle through sentences
@@ -140,10 +141,60 @@ def compare_accuracy_for_sentence_size(test_sent_tags_actual, test_sent_tags_est
         tag_diversity = len(set(test_sent_tags_actual[sent_index]))
 
         # check desired sentence attributes (i.e. length, diversity)
-        if (len(test_sent_tags_actual[sent_index]) >= min_sent_length): #and (tag_diversity == min_tag_diversity):
+        sentence_length = len(test_sent_tags_actual[sent_index])
+        if (sentence_length >= min_sent_length and sentence_length < (min_sent_length+ bucket_size)): #
             single_line_act_tags = single_line_act_tags + test_sent_tags_actual[sent_index][1:-1]
             single_line_est_tags = single_line_est_tags + test_sent_tags_est[sent_index]
             non_zero_demominator = True
+
+    # calculate accuracy for sentences that meet conditions
+    if (non_zero_demominator):
+        print(name, accuracy(single_line_act_tags, single_line_est_tags))
+
+def compare_accuracy_for_tag_diversity(test_sent_tags_actual, test_sent_tags_est, min_sent_length, min_tag_diversity, name):
+
+    """Computes accuracy for a est tagged test set. Does it for a particular number of unique POS states
+    (labelled sentence diversity)"""
+
+    single_line_act_tags = []
+    single_line_est_tags = []
+
+    # to prevent NaN results
+    non_zero_demominator = False
+
+    # cycle through sentences
+    for sent_index in range(len(test_sent_tags_actual)):
+
+        # check number of unique tags in sentence
+        tag_diversity = len(set(test_sent_tags_actual[sent_index]))
+
+        # check desired sentence attributes (i.e. length, diversity)
+        if ((tag_diversity == min_tag_diversity)):
+            single_line_act_tags = single_line_act_tags + test_sent_tags_actual[sent_index][1:-1]
+            single_line_est_tags = single_line_est_tags + test_sent_tags_est[sent_index]
+            non_zero_demominator = True
+
+    # calculate accuracy for sentences that meet conditions
+    if (non_zero_demominator):
+        print(name, accuracy(single_line_act_tags, single_line_est_tags))
+
+
+def compare_accuracy(test_sent_tags_actual, test_sent_tags_est, min_sent_length, min_tag_diversity, name):
+
+    """Computes accuracy for a est tagged test set. """
+
+    single_line_act_tags = []
+    single_line_est_tags = []
+
+    # to prevent NaN results
+    non_zero_demominator = False
+
+    # cycle through sentences
+    for sent_index in range(len(test_sent_tags_actual)):
+
+        single_line_act_tags = single_line_act_tags + test_sent_tags_actual[sent_index][1:-1]
+        single_line_est_tags = single_line_est_tags + test_sent_tags_est[sent_index]
+        non_zero_demominator = True
 
     # calculate accuracy for sentences that meet conditions
     if (non_zero_demominator):
