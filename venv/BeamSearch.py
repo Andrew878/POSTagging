@@ -82,115 +82,88 @@ class BeamSearch:
         maximum_prob = -10 ** 10
         maximum_origin = 0
 
-        # find the 'best' order of states to investigate
+        # find the 'best' order of states to investigate according to our beam length.
         beam_index_order = self.find_top_k_tags(previous_word_index, exisiting_viterbi)
 
+        # cycle through previous states, and find the max probability
         for previous_state_index in beam_index_order:
 
-            tag_pair_to_test = (self.non_beg_or_end_states[previous_state_index], current_state)
 
-            # print("current_tag_word_pair", current_tag_word_pair)
-            # print("tag_pair_to_test", tag_pair_to_test)
-            # print("previous vit at location = ", previous_word_index, previous_state_index,
-            #       exisiting_viterbi[previous_word_index][previous_state_index])
-            # print("tag transition prob = ",
-            #       log(self.smoothed_tag_tag[self.non_beg_or_end_states[previous_state_index]].prob(current_state)))
+            state_transition_prob_log = log(self.smoothed_tag_tag[self.non_beg_or_end_states[previous_state_index]].prob(current_state))
 
-            prob_est = exisiting_viterbi[previous_word_index][previous_state_index] + log(
-                self.smoothed_tag_tag[self.non_beg_or_end_states[previous_state_index]].prob(current_state))
+            prob_est = exisiting_viterbi[previous_word_index][previous_state_index] + state_transition_prob_log
 
-            # print("prob est is", prob_est)
-            # print("max prob is", maximum_prob)
-
+            # check if max probability, and update if appropriate
             if (maximum_prob < prob_est):
                 maximum_prob = prob_est
                 maximum_origin = self.non_beg_or_end_states[previous_state_index]
 
-            # print("max prob is", maximum_prob)
 
-        # print(
-        #     "returning max prob and max origin ",
-        #     maximum_prob + log(self.smoothed_word_tag[current_state].prob(current_word)),
-        #     maximum_origin)
-
+        # after checking all, return the max prob plus the emission probability. Also return appropriate back pointer
         return maximum_prob + log(self.smoothed_word_tag[current_state].prob(current_word)), maximum_origin;
 
     def find_top_k_tags(self, previous_word_index, exisiting_viterbi):
 
-        """" User: bro-grammer
-        https://stackoverflow.com/questions/36459969/python-convert-list-to-dictionary-with-indexes"""
+        """" Find the ordered, highest K tags to check.
+        Borrowed the second line from User: bro-grammer on
+        https://stackoverflow.com/questions/36459969/python-convert-list-to-dictionary-with-indexes Accessed on: 08/03/2019"""
 
+        # create new state list from a viterbi matrix column
         list_of_v = [v for v in exisiting_viterbi[previous_word_index]]
+
+        # create dict to help us remember original index order
         value_to_index_dict = dict(map(reversed, enumerate(list_of_v)))
 
         top_state_index_references = []
-        # print(list_of_v)
-        list_of_v.sort(reverse=True)
-        # print(list_of_v)
-        # print(value_to_index_dict)
-        # print("range(self.beam_width)",range(self.beam_width))
-        # print("(self.beam_width)",(self.beam_width))
 
+        # order vit column
+        list_of_v.sort(reverse=True)
+
+        # add the top K values
         for state in range(self.beam_width):
-            # print("state:",state)
-            # print("list_of_v[state]",list_of_v[state])
-            # print("value_to_index_dict[list_of_v[state]]",value_to_index_dict[list_of_v[state]])
             top_state_index_references.append(value_to_index_dict[list_of_v[state]])
-            return top_state_index_references
+
+        # return list of highest vit indices
+        return top_state_index_references
 
 
     def final_step_return_max_prob_and_best_path(self, exisiting_viterbi, previous_word_index):
 
+        """" Termination step """
+
+        # initialise maximum values
         maximum_prob = -10 ** 10
         maximum_origin = 0
 
+        # again, find order of highest states from vit matrix
         beam_index_order = self.find_top_k_tags(previous_word_index, exisiting_viterbi)
 
+        # cycle through states. Behaves very similar to 'return_max_prob_and_best_path' method
         for previous_state_index in beam_index_order:
-
-            tag_pair_to_test = (self.non_beg_or_end_states[previous_state_index], self.end)
-
-            # print(tag_pair_to_test)
-            # print("previous vit at location = ", previous_word_index, previous_state_index,
-            #       exisiting_viterbi[previous_word_index][previous_state_index])
 
             prob_est = exisiting_viterbi[previous_word_index][previous_state_index] + log(
                 self.smoothed_tag_tag[self.non_beg_or_end_states[previous_state_index]].prob(self.end))
-
-            # print("tag_pair_to_test, final stage", tag_pair_to_test)
-            # print("previous vit at location, final stage = ", previous_word_index, previous_state_index,
-            #       exisiting_viterbi[previous_word_index][previous_state_index])
-            # print("tag transition prob, final stage = ", log(
-            #     self.smoothed_tag_tag[self.non_beg_or_end_states[previous_state_index]].prob(self.end)))
 
             if (maximum_prob < prob_est):
                 maximum_prob = prob_est
                 maximum_origin = self.non_beg_or_end_states[previous_state_index]
 
-            # print("max prob is", maximum_prob)
-
-        # print("returning max prob and max origin, final stage ", maximum_prob, maximum_origin)
-
         return maximum_prob, maximum_origin;
 
     def construct_final_tag(self, back_pointer, best_last_tag_est, word_list):
+
+        """" construct tags from backpointer matrix """
+
         best_tags_array = []
         best_tags_array.append(best_last_tag_est)
         index = self.tag_to_index_dict[best_last_tag_est]
 
+        # ignoring the start/end symbols, add tags to list
         for i in range(len(back_pointer) - 2, 1, -1):
-            # print("i", i)
-            # print("index", index)
             current_tag = back_pointer[i][index]
             best_tags_array.append(current_tag)
             index = self.tag_to_index_dict[current_tag]
-            # print(best_tags_array)
-            # print("word", word_list[i])
 
+        # reverse order and return
         best_tags_array.reverse()
-
-        # print("FINAL")
-        # print(word_list)
-        # print(best_tags_array)
-        #
         return best_tags_array

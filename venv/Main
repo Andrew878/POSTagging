@@ -69,22 +69,21 @@ def tag_all_sentences_forward_Back(test_sents, freq_dist_tag_single, smoothed_ta
     return tag_estimated_by_beam
 
 
+# start and end symbols
 start = '<s>'
 end = '</s>'
 max_sentence_length = 101
 sents = brown.tagged_sents(tagset='universal')
-train_size = 10000  # 100.
-test_size = 1000
+train_size = 2000
+test_size = 500
 
-sents = [[(start, start)] + sent + [(end, end)] for sent in sents if len(sent) < max_sentence_length]
+# add start and end states and tokens to each sentence. Making sure sentences are not too long (to avoid underflow)
+sents = [[(start, start)] + sent + [(end, end)] for sent in sents[:train_size + test_size] if len(sent) < max_sentence_length]
 
+# split into test and training sets
 train_sents = sents[:train_size]
 test_sents = sents[train_size:train_size + test_size]
 
-train_words_individual = [[]] * len(train_sents)
-train_tags_individual = [[]] * len(train_sents)
-# test_words_individual = [[]] * len(test_sents)
-# test_tags_individual = [[]] * len(test_sents)
 test_words_individual = []
 test_tags_individual = []
 
@@ -97,31 +96,25 @@ freq_dist_tagBigramWithoutStartEnd = FreqDist()
 bigrams_tags = []
 j = 0
 
+#-------------- process training set -----------------
+# (1): we need a list of unique states/tags
 for sent in train_sents:
-    word_list = [w for (w, _) in sent]
+
+    # split tag lists
     tag_list = [t for (_, t) in sent]
-    tag_list_no_startEnd = [t for (_, t) in sent[1:-1]]
-
     freq_dist_tag_single += FreqDist(tag_list)
-    freq_dist_tagWordPair += FreqDist(sent[1:-1])
-    freq_dist_tagBigram += FreqDist(bigrams(tag_list))
     bigrams_tags.append(bigrams(tag_list))
-    freq_dist_tagBigramWithoutStartEnd += FreqDist(bigrams(tag_list_no_startEnd))
-    # skip the special start/end characters
-    freq_dist_tagWordPairWithStartEnd += FreqDist(sent)
 
-    train_words_individual[j].insert(0, word_list)
-    train_tags_individual[j].insert(0, tag_list)
-    j += 1
 
+# (2): create a unique list of states
 unique_tag_list = list(freq_dist_tag_single.keys())
 unique_tag_list.remove(start)
 unique_tag_list.remove(end)
-
 un_smoothed = {}
 smoothed_word_tag = {}
 tags = set(unique_tag_list)
 
+# (3): For each sentence count the word frequency for each tag
 for sent in train_sents:
     for tag in tags:
         words = [w for (w, t) in sent if t == tag]
@@ -130,18 +123,18 @@ for sent in train_sents:
             un_smoothed[tag] = FreqDist(words)
         else:
             un_smoothed[tag] += FreqDist(words)
+
+# (4): For each tag, find the smoothed probabilities using WittenBell
 for tag in tags:
     smoothed_word_tag[tag] = WittenBellProbDist(un_smoothed[tag], bins=1e5)
 
-# print('prob of NOUN -> change is', smoothed_word_tag['NOUN'].prob('change'))
-# print('prob of DET -> the is', smoothed_word_tag['DET'].prob('the'))
 
+# (5): repeat step (3) but for pairs of consecutive tags
 un_smoothed = {}
 smoothed_tag_tag = {}
 tags.add(start)
 
-# print(list(bigrams_tags[0]))
-
+# (6): for
 for bigram_list in bigrams_tags:
 
     bigram_sent = list(bigram_list)
@@ -172,25 +165,8 @@ for sent in test_sents:
     test_tags_individual.append(tag_list)
     j += 1
 
-# print(train_words_individual[0][:])
-# print(freq_dist_tag_single.most_common(15))
-# print(freq_dist_tagWordPair.most_common(15))
-# print(freq_dist_tagBigram.most_common(15))
-
-print("")
-
-freq_dist_tag_single_SMOOTH = WittenBellProbDist(freq_dist_tag_single, bins=1e5)
-freq_dist_tagWordPair_SMOOTH = WittenBellProbDist(freq_dist_tagWordPair, bins=1e5)
-freq_dist_tagWordPairWithStartEnd_SMOOTH = WittenBellProbDist(freq_dist_tagWordPairWithStartEnd, bins=1e5)
-freq_dist_tagBigram_SMOOTH = WittenBellProbDist(freq_dist_tagBigram, bins=1e5)
-freq_dist_tagBigramNoStartEnd_SMOOTH = WittenBellProbDist(freq_dist_tagBigramWithoutStartEnd, bins=1e5)
-
-# print(freq_dist_tagWordPair_SMOOTH.prob(("change","NOUN")))
-# print(freq_dist_tagWordPair_SMOOTH.prob(("the","DET")))
 
 
-# test_sent_tags_est = vit.viterbi_path(test_words_individual[0], freq_dist_tag_single, freq_dist_tag_single_SMOOTH, freq_dist_tagWordPair_SMOOTH,
-#                  freq_dist_tagBigram_SMOOTH, freq_dist_tagWordPairWithStartEnd_SMOOTH)
 
 test_words_to_tag = test_words_individual
 test_sent_tags_act = test_tags_individual
